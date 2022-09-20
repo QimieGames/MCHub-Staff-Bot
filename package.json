@@ -1,0 +1,28 @@
+{
+  "name": "mchub-staff-bot",
+  "version": "1.0.0",
+  "description": "A Simple Discord Bot To Help You Staff MCHub From Discord",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/QimieGames/MCHub-Staff-Bot.git"
+  },
+  "author": "QimieGames",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/QimieGames/MCHub-Staff-Bot/issues"
+  },
+  "homepage": "https://github.com/QimieGames/MCHub-Staff-Bot#readme",
+  "dependencies": {
+    "@discordjs/builders": "^1.2.0",
+    "@discordjs/rest": "^1.1.0",
+    "discord-api-types": "^0.37.10",
+    "discord.js": "^14.3.0",
+    "dotenv": "^16.0.2",
+    "mineflayer": "github:QimieGames/mineflayer",
+    "xlsx": "^0.18.5"
+  }
+}

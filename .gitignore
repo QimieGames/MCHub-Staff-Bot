@@ -1,0 +1,4 @@
+error_logs/
+node_modules/
+.env
+config.json
