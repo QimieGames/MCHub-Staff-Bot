@@ -12,6 +12,13 @@ module.exports = {
 
         const pixelmonRanks = ['TESTRANK'];
 
+        const discordEmbedFooter =
+
+        {
+            text: 'Custom Coded By QimieGames',
+            iconURL: 'https://i.imgur.com/qTwnd6e.png'
+        };
+
         let publicChatStringRegex, chatClearedStringRegex, chatToggledStringRegex;
 
         switch (realmName) {
@@ -65,19 +72,19 @@ module.exports = {
         const chatMessageRegex =
 
         {
-            public_chat: new RegExp(publicChatStringRegex),
-            global_staff_chat: new RegExp(/^\[[0-9A-Za-z]+\] \[GSC\] \[[A-Za-z\+]+\] [0-9A-Za-z\_\*]{3,17}\: .+$/),
-            staff_chat: new RegExp(/^\[[0-9A-Za-z]+\] \[SC\] \[[A-Za-z\+]+\] [0-9A-Za-z\_\*]{3,17}\: .+$/),
-            trial_chat: new RegExp(/^\[[0-9A-Za-z]+\] \[TC\] \[[A-Za-z\+]+\] [0-9A-Za-z\_\*]{3,17}\: .+$/),
-            global_social_spy: new RegExp(/^\(([0-9a-z\> ]+)\) \[Spy\] \[[0-9A-Za-z\_\*]{3,17} \> [0-9A-Za-z\_\*]{3,17}\] .+$/),
-            social_spy: new RegExp(/^\[Spy\] \[[0-9A-Za-z\_\*]{3,17} \> [0-9A-Za-z\_\*]{3,17}\] .+$/),
-            player_report: new RegExp(/^\(([0-9A-Za-z]+)\) REPORT \» ([0-9A-Za-z\_\*]{3,17}) reported ([0-9A-Za-z\_\*]{3,17}) for (.+)(\.|\!)/),
-            helpop: new RegExp(/^\[HelpOp\] ([0-9A-Za-z\_\*]{3,17})\: (.+)$/),
-            auto_clicker_alert: new RegExp(/^AC \» ([0-9A-Za-z\_\*]{3,17}) may be using autoclicker\! \(([0-9\.]+) \> [0-9]+\) Variance \([0-9]+ \- [0-9]+ms\)/),
-            afk_checked_alert: new RegExp(/^AC \» ([0-9A-Za-z\_\*]{3,17}) has been AFK Checked\, this player has been afk for ([0-9a-z ]+)\!/),
-            nuker_alert: new RegExp(/^AC \» ([0-9A-Za-z\_\*]{3,17}) may be using nuker\! \(([0-9]+) \> ([0-9]+)\)/),
-            chat_cleared: new RegExp(chatClearedStringRegex),
-            chat_toggled: new RegExp(chatToggledStringRegex)
+            public_chat: RegExp(publicChatStringRegex),
+            global_staff_chat: RegExp(/^\[[0-9A-Za-z]+\] \[GSC\] \[[A-Za-z\+]+\] [0-9A-Za-z\_\*]{3,17}\: .+$/),
+            staff_chat: RegExp(/^\[[0-9A-Za-z]+\] \[SC\] \[[A-Za-z\+]+\] [0-9A-Za-z\_\*]{3,17}\: .+$/),
+            trial_chat: RegExp(/^\[[0-9A-Za-z]+\] \[TC\] \[[A-Za-z\+]+\] [0-9A-Za-z\_\*]{3,17}\: .+$/),
+            global_social_spy: RegExp(/^\(([0-9a-z\> ]+)\) \[Spy\] \[[0-9A-Za-z\_\*]{3,17} \> [0-9A-Za-z\_\*]{3,17}\] .+$/),
+            social_spy: RegExp(/^\[Spy\] \[[0-9A-Za-z\_\*]{3,17} \> [0-9A-Za-z\_\*]{3,17}\] .+$/),
+            player_report: RegExp(/^\(([0-9A-Za-z]+)\) REPORT \» ([0-9A-Za-z\_\*]{3,17}) reported ([0-9A-Za-z\_\*]{3,17}) for (.+)(\.|\!)/),
+            helpop: RegExp(/^\[HelpOp\] ([0-9A-Za-z\_\*]{3,17})\: (.+)$/),
+            auto_clicker_alert: RegExp(/^AC \» ([0-9A-Za-z\_\*]{3,17}) may be using autoclicker\! \(([0-9\.]+) \> [0-9]+\) Variance \([0-9]+ \- [0-9]+ms\)/),
+            afk_checked_alert: RegExp(/^AC \» ([0-9A-Za-z\_\*]{3,17}) has been AFK Checked\, this player has been afk for ([0-9a-z ]+)\!/),
+            nuker_alert: RegExp(/^AC \» ([0-9A-Za-z\_\*]{3,17}) may be using nuker\! \(([0-9]+) \> ([0-9]+)\)/),
+            chat_cleared: RegExp(chatClearedStringRegex),
+            chat_toggled: RegExp(chatToggledStringRegex)
         };
 
         function determineChatMessageType() {
@@ -102,39 +109,32 @@ module.exports = {
         }
 
         async function logChatMessage(chatMessageType) {
+            if (realmName === 'pixelmon') {
+                pixelmonCharacterRanks.forEach((pixelmonCharacterRank) => {
+
+                    chatMessage = String(chatMessage).replace(RegExp(`[\\${pixelmonCharacterRank}]`), `[${pixelmonRanks[pixelmonCharacterRanks.indexOf(pixelmonCharacterRank)]}]`);
+
+                });
+            }
             if (Boolean(configValue.feature[`log_${chatMessageType}_to_console`]) === true) {
-                if (realmName === 'pixelmon') {
-                    pixelmonCharacterRanks.forEach((pixelmonCharacterRank) => {
-
-                        chatMessage = String(chatMessage).replace(RegExp(`[\\${pixelmonCharacterRank}]`, 'g'), `[${pixelmonRanks[pixelmonCharacterRanks.indexOf(pixelmonCharacterRank)]}]`);
-
-                    });
-                }
-                console.log(chatMessage.toAnsi());
+                console.log(String(chatMessage.toAnsi()).replace(RegExp(/[\`]{3}/, 'g'), '`'));
             }
             if (Boolean(configValue.feature[`log_${chatMessageType}_to_discord`]) === true) {
 
                 const chatMessageChannelID = configValue.discord_channel[chatMessageType];
 
-                const chatMessageTypeString = String(chatMessageType).replace(new RegExp(/[\_]/, 'g'), ' ');
+                const chatMessageTypeString = String(chatMessageType).replace(RegExp(/[\_]/, 'g'), ' ');
 
                 const chatMessageChannelName = discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).name;
 
                 const discordMarkdowns = ['\*', '\_', '\`', '\>', '\|'];
 
-                if (realmName === 'pixelmon') {
-                    pixelmonCharacterRanks.forEach((pixelmonCharacterRank) => {
-
-                        chatMessage = String(chatMessage).replace(RegExp(`[\\${pixelmonCharacterRank}]`, 'g'), `[${pixelmonRanks[pixelmonCharacterRanks.indexOf(pixelmonCharacterRank)]}]`);
-
-                    });
-                }
                 switch (chatMessageType) {
                     default:
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
                                 if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('SendMessages') === true) {
-                                    await discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).send('```' + chatMessage + '```');
+                                    await discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).send({ content: '```' + chatMessage + '```' });
                                 } else {
                                     console.log(`MCHSB » Error occured while logging ${chatMessageTypeString} in #${chatMessageChannelName}!`);
                                 }
@@ -146,6 +146,46 @@ module.exports = {
                         }
                         break;
                     case 'player_report':
+
+                        const playerReportDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
+
+                        const playerReportRealm = playerReportDetails[1].toUpperCase();
+
+                        const playerReportPlayerIGN = playerReportDetails[2];
+
+                        const playerReportReportedPlayerIGN = playerReportDetails[3];
+
+                        const playerReportReason = playerReportDetails[4];
+
+                        let playerReportEmbedDescription = `IGN: ${playerReportPlayerIGN}\n` + `Reported Player IGN: ${playerReportReportedPlayerIGN}\n` + `Reason: ${playerReportReason}`;
+
+                        discordMarkdowns.forEach((discordMarkdown) => {
+
+                            playerReportEmbedDescription = playerReportEmbedDescription.replace(RegExp(`[\\${discordMarkdown}]`, 'g'), `\\${discordMarkdown}`);
+
+                        });
+
+                        const playerReportEmbed = new DiscordJS.EmbedBuilder()
+                            .setColor('#4422bf')
+                            .setTitle(`[${playerReportRealm}] PLAYER REPORT`)
+                            .setDescription(playerReportEmbedDescription)
+                            .setThumbnail('https://i.imgur.com/7fkLqne.png')
+                            .setTimestamp()
+                            .setFooter(discordEmbedFooter);
+
+                        if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
+                            if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
+                                if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('SendMessages') === true) {
+                                    await discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).send({ embeds: [playerReportEmbed] });
+                                } else {
+                                    console.log(`MCHSB » Error occured while logging ${chatMessageTypeString} in #${chatMessageChannelName}!`);
+                                }
+                            } else {
+                                console.log(`MCHSB » Error occured while viewing #${chatMessageChannelName}!`);
+                            }
+                        } else {
+                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} channel!`);
+                        }
                         break;
                     case 'helpop':
 
@@ -159,7 +199,7 @@ module.exports = {
 
                         discordMarkdowns.forEach((discordMarkdown) => {
 
-                            helpopEmbedDescription = helpopEmbedDescription.replace(new RegExp(`[\\${discordMarkdown}]`, 'g'), `\\${discordMarkdown}`);
+                            helpopEmbedDescription = helpopEmbedDescription.replace(RegExp(`[\\${discordMarkdown}]`, 'g'), `\\${discordMarkdown}`);
 
                         });
 
@@ -169,7 +209,7 @@ module.exports = {
                             .setDescription(helpopEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter({ text: 'Custom Coded By QimieGames', iconURL: 'https://images-ext-1.discordapp.net/external/HQFug-TJRekRG6wkhZL_wlEowWtUxuuR940ammbrz7k/https/cdn.discordapp.com/avatars/402039216487399447/347fd513aa2af9e8b4ac7ca80150b953.webp?width=115&height=115' });
+                            .setFooter(discordEmbedFooter);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
@@ -182,18 +222,18 @@ module.exports = {
                                 console.log(`MCHSB » Error occured while viewing #${chatMessageChannelName}!`);
                             }
                         } else {
-                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} log channel!`);
+                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} channel!`);
                         }
                         break;
                     case 'auto_clicker_alert':
 
                         const autoClickerAlertDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
 
-                        const autoClickerAlertPlayerIGN = autoClickerAlertDetails[1].replace(new RegExp(/[\_]/, 'g'), '\\_');
+                        const autoClickerAlertPlayerIGN = autoClickerAlertDetails[1].replace(RegExp(/[\_]/, 'g'), '\\_');
 
                         const autoClickerAlertPlayerCPS = autoClickerAlertDetails[2];
 
-                        const autoClickerAlertPlayerCPSVarianceDetails = String(chatMessage.hoverEvent.value[0].text).match(new RegExp(/^Time Between Clicks\: \[([0-9\, ]+)\]$/, 'm'));
+                        const autoClickerAlertPlayerCPSVarianceDetails = String(chatMessage.hoverEvent.value[0].text).match(RegExp(/^Time Between Clicks\: \[([0-9\, ]+)\]$/));
 
                         const autoClickerAlertPlayerCPSVariance = autoClickerAlertPlayerCPSVarianceDetails[1];
 
@@ -205,7 +245,7 @@ module.exports = {
                             .setDescription(autoClickerAlertEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter({ text: 'Custom Coded By QimieGames', iconURL: 'https://images-ext-1.discordapp.net/external/HQFug-TJRekRG6wkhZL_wlEowWtUxuuR940ammbrz7k/https/cdn.discordapp.com/avatars/402039216487399447/347fd513aa2af9e8b4ac7ca80150b953.webp?width=115&height=115' });
+                            .setFooter(discordEmbedFooter);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
@@ -218,14 +258,14 @@ module.exports = {
                                 console.log(`MCHSB » Error occured while viewing #${chatMessageChannelName}!`);
                             }
                         } else {
-                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} log channel!`);
+                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} channel!`);
                         }
                         break;
                     case 'afk_checked_alert':
 
                         const afkCheckedAlertDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
 
-                        const afkCheckedAlertPlayerIGN = afkCheckedAlertDetails[1].replace(new RegExp(/[\_]/, 'g'), '\\_');
+                        const afkCheckedAlertPlayerIGN = afkCheckedAlertDetails[1].replace(RegExp(/[\_]/, 'g'), '\\_');
 
                         const afkCheckedAlertPlayerAFKDuration = afkCheckedAlertDetails[2];
 
@@ -237,7 +277,7 @@ module.exports = {
                             .setDescription(afkCheckedAlertEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter({ text: 'Custom Coded By QimieGames', iconURL: 'https://images-ext-1.discordapp.net/external/HQFug-TJRekRG6wkhZL_wlEowWtUxuuR940ammbrz7k/https/cdn.discordapp.com/avatars/402039216487399447/347fd513aa2af9e8b4ac7ca80150b953.webp?width=115&height=115' });
+                            .setFooter(discordEmbedFooter);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
@@ -250,14 +290,14 @@ module.exports = {
                                 console.log(`MCHSB » Error occured while viewing #${chatMessageChannelName}!`);
                             }
                         } else {
-                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} log channel!`);
+                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} channel!`);
                         }
                         break;
                     case 'nuker_alert':
 
                         const nukerAlertDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
 
-                        const nukerAlertPlayerIGN = nukerAlertDetails[1].replace(new RegExp(/[\_]/, 'g'), '\\_');
+                        const nukerAlertPlayerIGN = nukerAlertDetails[1].replace(RegExp(/[\_]/, 'g'), '\\_');
 
                         const nukerAlertPlayerBlocksBroken = nukerAlertDetails[2];
 
@@ -271,7 +311,7 @@ module.exports = {
                             .setDescription(nukerAlertEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter({ text: 'Custom Coded By QimieGames', iconURL: 'https://images-ext-1.discordapp.net/external/HQFug-TJRekRG6wkhZL_wlEowWtUxuuR940ammbrz7k/https/cdn.discordapp.com/avatars/402039216487399447/347fd513aa2af9e8b4ac7ca80150b953.webp?width=115&height=115' });
+                            .setFooter(discordEmbedFooter);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
@@ -284,29 +324,29 @@ module.exports = {
                                 console.log(`MCHSB » Error occured while viewing #${chatMessageChannelName}!`);
                             }
                         } else {
-                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} log channel!`);
+                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} channel!`);
                         }
                         break;
                     case 'chat_cleared':
 
-                        const chatClearedAlertDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
+                        const chatClearedDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
 
-                        const chatClearedAlertPlayerIGN = chatClearedAlertDetails[1].replace(new RegExp(/[\_]/, 'g'), '\\_');
+                        const chatClearedStaffIGN = chatClearedDetails[1].replace(RegExp(/[\_]/, 'g'), '\\_');
 
-                        const chatClearedAlertEmbedDescription = `IGN: ${chatClearedAlertPlayerIGN}`;
+                        const chatClearedEmbedDescription = `IGN: ${chatClearedStaffIGN}`;
 
-                        const chatClearedAlertEmbed = new DiscordJS.EmbedBuilder()
+                        const chatClearedEmbed = new DiscordJS.EmbedBuilder()
                             .setColor('#4422bf')
                             .setTitle('CHAT CLEARED')
-                            .setDescription(chatClearedAlertEmbedDescription)
+                            .setDescription(chatClearedEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter({ text: 'Custom Coded By QimieGames', iconURL: 'https://images-ext-1.discordapp.net/external/HQFug-TJRekRG6wkhZL_wlEowWtUxuuR940ammbrz7k/https/cdn.discordapp.com/avatars/402039216487399447/347fd513aa2af9e8b4ac7ca80150b953.webp?width=115&height=115' });
+                            .setFooter(discordEmbedFooter);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
                                 if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('SendMessages') === true) {
-                                    await discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).send({ embeds: [chatClearedAlertEmbed] });
+                                    await discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).send({ embeds: [chatClearedEmbed] });
                                 } else {
                                     console.log(`MCHSB » Error occured while logging ${chatMessageTypeString} in #${chatMessageChannelName}!`);
                                 }
@@ -314,31 +354,31 @@ module.exports = {
                                 console.log(`MCHSB » Error occured while viewing #${chatMessageChannelName}!`);
                             }
                         } else {
-                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} log channel!`);
+                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} channel!`);
                         }
                         break;
                     case 'chat_toggled':
 
-                        const chatToggledAlertDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
+                        const chatToggledDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
 
-                        const chatToggledAlertPlayerIGN = chatToggledAlertDetails[2].replace(new RegExp(/[\_]/, 'g'), '\\_');
+                        const chatToggledStaffIGN = chatToggledDetails[2].replace(RegExp(/[\_]/, 'g'), '\\_');
 
-                        const chatToggledStatus = chatToggledAlertDetails[1].toUpperCase();
+                        const chatToggledStatus = chatToggledDetails[1].toUpperCase();
 
-                        const chatToggledAlertEmbedDescription = `IGN: ${chatToggledAlertPlayerIGN}\n` + `Status: ${chatToggledStatus}`;
+                        const chatToggledEmbedDescription = `IGN: ${chatToggledStaffIGN}\n` + `Status: ${chatToggledStatus}`;
 
-                        const chatToggledAlertEmbed = new DiscordJS.EmbedBuilder()
+                        const chatToggledEmbed = new DiscordJS.EmbedBuilder()
                             .setColor('#4422bf')
                             .setTitle('CHAT TOGGLED')
-                            .setDescription(chatToggledAlertEmbedDescription)
+                            .setDescription(chatToggledEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter({ text: 'Custom Coded By QimieGames', iconURL: 'https://images-ext-1.discordapp.net/external/HQFug-TJRekRG6wkhZL_wlEowWtUxuuR940ammbrz7k/https/cdn.discordapp.com/avatars/402039216487399447/347fd513aa2af9e8b4ac7ca80150b953.webp?width=115&height=115' });
+                            .setFooter(discordEmbedFooter);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
                                 if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('SendMessages') === true) {
-                                    await discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).send({ embeds: [chatToggledAlertEmbed] });
+                                    await discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).send({ embeds: [chatToggledEmbed] });
                                 } else {
                                     console.log(`MCHSB » Error occured while logging ${chatMessageTypeString} in #${chatMessageChannelName}!`);
                                 }
@@ -346,7 +386,7 @@ module.exports = {
                                 console.log(`MCHSB » Error occured while viewing #${chatMessageChannelName}!`);
                             }
                         } else {
-                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} log channel!`);
+                            console.log(`MCHSB » Error occured while finding ${chatMessageTypeString} channel!`);
                         }
                         break;
                 }
@@ -355,15 +395,15 @@ module.exports = {
         }
 
         async function logMismatchedMessages() {
+            if (realmName === 'pixelmon') {
+                pixelmonCharacterRanks.forEach((pixelmonCharacterRank) => {
+
+                    chatMessage = String(chatMessage).replace(RegExp(`[\\${pixelmonCharacterRank}]`), `[${pixelmonRanks[pixelmonCharacterRanks.indexOf(pixelmonCharacterRank)]}]`);
+
+                });
+            }
             if (Boolean(configValue.feature.log_mismatched_message_to_console) === true) {
-                if (realmName === 'pixelmon') {
-                    pixelmonCharacterRanks.forEach((pixelmonCharacterRank) => {
-
-                        chatMessage = String(chatMessage).replace(RegExp(`[\\${pixelmonCharacterRank}]`, 'g'), `[${pixelmonRanks[pixelmonCharacterRanks.indexOf(pixelmonCharacterRank)]}]`);
-
-                    });
-                }
-                console.log(chatMessage.toAnsi());
+                console.log(String(chatMessage.toAnsi()).replace(RegExp(/[\`]{3}/, 'g'), '`'));
             }
             if (Boolean(configValue.feature.log_mismatched_message_to_discord) === true) {
 
@@ -371,17 +411,10 @@ module.exports = {
 
                 const mismatchedMessageChannelName = discordBot.guilds.cache.get(guildID).channels.cache.get(mismatchedMessageChannelID).name;
 
-                if (realmName === 'pixelmon') {
-                    pixelmonCharacterRanks.forEach((pixelmonCharacterRank) => {
-
-                        chatMessage = String(chatMessage).replace(RegExp(`[\\${pixelmonCharacterRank}]`, 'gm'), `[${pixelmonRanks[pixelmonCharacterRanks.indexOf(pixelmonCharacterRank)]}]`);
-
-                    });
-                }
                 if (discordBot.guilds.cache.get(guildID).channels.cache.get(mismatchedMessageChannelID) !== undefined) {
                     if (discordBot.guilds.cache.get(guildID).channels.cache.get(mismatchedMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(mismatchedMessageChannelID).permissionsFor(clientID).has('SendMessages') === true) {
-                            await discordBot.guilds.cache.get(guildID).channels.cache.get(mismatchedMessageChannelID).send('```' + chatMessage + '```');
+                            await discordBot.guilds.cache.get(guildID).channels.cache.get(mismatchedMessageChannelID).send({ content: '```' + chatMessage + '```' });
                         } else {
                             console.log(`MCHSB » Error occured while logging mismatched messages in #${mismatchedMessageChannelName}!`);
                         }
@@ -389,7 +422,7 @@ module.exports = {
                         console.log(`MCHSB » Error occured while viewing #${mismatchedMessageChannelName}!`);
                     }
                 } else {
-                    console.log(`MCHSB » Error occured while finding mismatched messages channel!`);
+                    console.log(`MCHSB » Error occured while finding mismatched message channel!`);
                 }
             }
         }
