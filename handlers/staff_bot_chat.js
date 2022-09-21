@@ -8,9 +8,9 @@ module.exports = {
 
         const realmName = String(configValue.staff_bot.realm_name).toLowerCase();
 
-        const pixelmonCharacterRanks = ['TEST'];
+        const pixelmonSpecialCharacters = ['ꃫ', 'ꂹ', 'ꂸ', 'ꂺ', 'ꂻ', 'ꂼ', 'ꃏ', 'ꃠ', 'ꃪ', '丷', '', 'ꃥ', 'ꃦ', 'ꃬ', 'ꃧ', 'ꃭ', 'ꃩ', 'ꃨ'];
 
-        const pixelmonRanks = ['TESTRANK'];
+        const pixelmonSpecialCharactersTranslation = ['TRAINER', 'ACE', 'PRO', 'ULTRA', 'MASTER', 'MYTHIC', 'LEGEND', 'PRIMAL', 'MEDIA', 'PARTNER', 'TRIAL', 'HELPER', 'MOD', 'SRMOD', 'BUILDER', 'ADMIN', 'MANAGER', 'DEV', 'OWNER'];
 
         const discordEmbedFooter =
 
@@ -19,14 +19,12 @@ module.exports = {
             iconURL: 'https://i.imgur.com/qTwnd6e.png'
         };
 
-        let publicChatStringRegex, chatClearedStringRegex, chatToggledStringRegex;
+        let publicChatStringRegex, chatToggledStringRegex;
 
         switch (realmName) {
             case 'hubm':
 
                 publicChatStringRegex = '^(\\[\\-\\]|\\[[A-Za-z\\+]+\\]|\\|\\[[A-Za-z\\+]+\\]\\|) [0-9A-Za-z\\_\\*]{3,17}\\: .+$';
-
-                chatClearedStringRegex = '^CHAT \\» The chat has been cleared by ([0-9A-Za-z\\_\\*]{3,17})\\!';
 
                 chatToggledStringRegex = '^Server chat has been (enabled|disabled) by ([0-9A-Za-z\\_\\*]{3,17})\\.';
 
@@ -35,16 +33,12 @@ module.exports = {
 
                 publicChatStringRegex = '^(\\[\\-\\]|\\[R[0-9]+\\]|\\[P[0-9]+\\] \\[R[0-9]+\\]) (\\[[A-Za-z\\+]+\\]|\\|\\[[A-Za-z\\+]+\\]\\||\\[[A-Za-z\\+]+\\] \\[.+\\]|\\|\\[[A-Za-z\\+]+\\]\\| \\[.+\\]) [0-9A-Za-z\\_\\*]{3,17}(| \\[P\\])\\: .+$';
 
-                chatClearedStringRegex = '^CHAT \\» The chat has been cleared by ([0-9A-Za-z\\_\\*]{3,17})\\!';
-
                 chatToggledStringRegex = '^Server chat has been (enabled|disabled) by ([0-9A-Za-z\\_\\*]{3,17})\\.';
 
                 break;
             case 'sun':
 
                 publicChatStringRegex = '^\\[L[0-9]+\\] (\\[[A-Za-z\\+]+\\]|\\|\\[[A-Za-z\\+]+\\]\\||\\[[A-Za-z\\+]+\\] \\[.+\\]|\\|\\[[A-Za-z\\+]+\\]\\| \\[.+\\]) .+(| \\[P\\])\\: .+$';
-
-                chatClearedStringRegex = '^CHAT \\» The chat has been cleared by ([0-9A-Za-z\\_\\*]{3,17})\\!';
 
                 chatToggledStringRegex = '^CHAT \\> Server chat has been (enabled|disabled) by ([0-9A-Za-z\\_\\*]{3,17})\\.';
 
@@ -53,16 +47,12 @@ module.exports = {
 
                 publicChatStringRegex = '^(\\[\\-\\]|\\[[A-Za-z\\+]+\\]|\\|\\[[A-Za-z\\+]+\\]\\|) [0-9A-Za-z\\_\\*]{3,17}(| \\[P\\])\\: .+$';
 
-                chatClearedStringRegex = '^CHAT \\» The chat has been cleared by ([0-9A-Za-z\\_\\*]{3,17})\\!';
-
                 chatToggledStringRegex = '^Server chat has been (enabled|disabled) by ([0-9A-Za-z\\_\\*]{3,17})\\.';
 
                 break;
             case 'pixelmon':
 
-                publicChatStringRegex = '^.{1} .{3,17} \\» .+$';
-
-                chatClearedStringRegex = '^CHAT \\» The chat has been cleared by ([0-9A-Za-z\\_\\*]{3,17})\\!';
+                publicChatStringRegex = '^(\\ꃫ|\\ꂹ|\\ꂸ|\\ꂺ|\\ꂻ|\\ꂼ|\\ꃏ|\\ꃠ|\\ꃪ|\\丷|\\|\\ꃥ|\\ꃦ|\\ꃬ|\\ꃧ|\\ꃭ|\\ꃩ|\\ꃨ) .{3,17} \\» .+$';
 
                 chatToggledStringRegex = '^Server chat has been (enabled|disabled) by ([0-9A-Za-z\\_\\*]{3,17})\\.';
 
@@ -83,9 +73,21 @@ module.exports = {
             auto_clicker_alert: RegExp(/^AC \» ([0-9A-Za-z\_\*]{3,17}) may be using autoclicker\! \(([0-9\.]+) \> [0-9]+\) Variance \([0-9]+ \- [0-9]+ms\)/),
             afk_checked_alert: RegExp(/^AC \» ([0-9A-Za-z\_\*]{3,17}) has been AFK Checked\, this player has been afk for ([0-9a-z ]+)\!/),
             nuker_alert: RegExp(/^AC \» ([0-9A-Za-z\_\*]{3,17}) may be using nuker\! \(([0-9]+) \> ([0-9]+)\)/),
-            chat_cleared: RegExp(chatClearedStringRegex),
+            chat_cleared: RegExp(/^CHAT \» The chat has been cleared by ([0-9A-Za-z\_\*]{3,17})\!/),
             chat_toggled: RegExp(chatToggledStringRegex)
         };
+
+        let chatMessageForConsole = String(chatMessage.toAnsi()).replace(RegExp(/[\`]{3}/, 'g'), '`'), chatMessageForDiscord = String(chatMessage).replace(RegExp(/[\`]{3}/, 'g'), '`');
+
+        if (realmName === 'pixelmon') {
+            pixelmonSpecialCharacters.forEach((pixelmonSpecialCharacter) => {
+
+                chatMessageForConsole = String(chatMessageForConsole).replace(RegExp(`\\${pixelmonSpecialCharacter}`), `[${pixelmonSpecialCharactersTranslation[pixelmonSpecialCharacters.indexOf(pixelmonSpecialCharacter)]}]`);
+
+                chatMessageForDiscord = String(chatMessageForDiscord).replace(RegExp(`\\${pixelmonSpecialCharacter}`), `[${pixelmonSpecialCharactersTranslation[pixelmonSpecialCharacters.indexOf(pixelmonSpecialCharacter)]}]`);
+
+            });
+        }
 
         function determineChatMessageType() {
 
@@ -109,17 +111,10 @@ module.exports = {
         }
 
         async function logChatMessage(chatMessageType) {
-            if (realmName === 'pixelmon') {
-                pixelmonCharacterRanks.forEach((pixelmonCharacterRank) => {
-
-                    chatMessage = String(chatMessage).replace(RegExp(`[\\${pixelmonCharacterRank}]`), `[${pixelmonRanks[pixelmonCharacterRanks.indexOf(pixelmonCharacterRank)]}]`);
-
-                });
+            if (String(configValue.feature[`log_${chatMessageType}_to_console`]).toLowerCase() === 'true') {
+                console.log(chatMessageForConsole);
             }
-            if (Boolean(configValue.feature[`log_${chatMessageType}_to_console`]) === true) {
-                console.log(String(chatMessage.toAnsi()).replace(RegExp(/[\`]{3}/, 'g'), '`'));
-            }
-            if (Boolean(configValue.feature[`log_${chatMessageType}_to_discord`]) === true) {
+            if (String(configValue.feature[`log_${chatMessageType}_to_discord`]).toLowerCase() === 'true') {
 
                 const chatMessageChannelID = configValue.discord_channel[chatMessageType];
 
@@ -134,7 +129,7 @@ module.exports = {
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
                                 if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('SendMessages') === true) {
-                                    await discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).send({ content: '```' + chatMessage + '```' });
+                                    await discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).send({ content: '```' + chatMessageForDiscord + '```' });
                                 } else {
                                     console.log(`MCHSB » Error occured while logging ${chatMessageTypeString} in #${chatMessageChannelName}!`);
                                 }
@@ -147,7 +142,7 @@ module.exports = {
                         break;
                     case 'player_report':
 
-                        const playerReportDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
+                        const playerReportDetails = String(chatMessageForDiscord).match(chatMessageRegex[chatMessageType]);
 
                         const playerReportRealm = playerReportDetails[1].toUpperCase();
 
@@ -189,7 +184,7 @@ module.exports = {
                         break;
                     case 'helpop':
 
-                        const helpopDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
+                        const helpopDetails = String(chatMessageForDiscord).match(chatMessageRegex[chatMessageType]);
 
                         const helpopPlayerIGN = helpopDetails[1];
 
@@ -227,7 +222,7 @@ module.exports = {
                         break;
                     case 'auto_clicker_alert':
 
-                        const autoClickerAlertDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
+                        const autoClickerAlertDetails = String(chatMessageForDiscord).match(chatMessageRegex[chatMessageType]);
 
                         const autoClickerAlertPlayerIGN = autoClickerAlertDetails[1].replace(RegExp(/[\_]/, 'g'), '\\_');
 
@@ -263,7 +258,7 @@ module.exports = {
                         break;
                     case 'afk_checked_alert':
 
-                        const afkCheckedAlertDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
+                        const afkCheckedAlertDetails = String(chatMessageForDiscord).match(chatMessageRegex[chatMessageType]);
 
                         const afkCheckedAlertPlayerIGN = afkCheckedAlertDetails[1].replace(RegExp(/[\_]/, 'g'), '\\_');
 
@@ -295,7 +290,7 @@ module.exports = {
                         break;
                     case 'nuker_alert':
 
-                        const nukerAlertDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
+                        const nukerAlertDetails = String(chatMessageForDiscord).match(chatMessageRegex[chatMessageType]);
 
                         const nukerAlertPlayerIGN = nukerAlertDetails[1].replace(RegExp(/[\_]/, 'g'), '\\_');
 
@@ -329,7 +324,7 @@ module.exports = {
                         break;
                     case 'chat_cleared':
 
-                        const chatClearedDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
+                        const chatClearedDetails = String(chatMessageForDiscord).match(chatMessageRegex[chatMessageType]);
 
                         const chatClearedStaffIGN = chatClearedDetails[1].replace(RegExp(/[\_]/, 'g'), '\\_');
 
@@ -359,7 +354,7 @@ module.exports = {
                         break;
                     case 'chat_toggled':
 
-                        const chatToggledDetails = String(chatMessage).match(chatMessageRegex[chatMessageType]);
+                        const chatToggledDetails = String(chatMessageForDiscord).match(chatMessageRegex[chatMessageType]);
 
                         const chatToggledStaffIGN = chatToggledDetails[2].replace(RegExp(/[\_]/, 'g'), '\\_');
 
@@ -395,17 +390,10 @@ module.exports = {
         }
 
         async function logMismatchedMessages() {
-            if (realmName === 'pixelmon') {
-                pixelmonCharacterRanks.forEach((pixelmonCharacterRank) => {
-
-                    chatMessage = String(chatMessage).replace(RegExp(`[\\${pixelmonCharacterRank}]`), `[${pixelmonRanks[pixelmonCharacterRanks.indexOf(pixelmonCharacterRank)]}]`);
-
-                });
+            if (String(configValue.feature.log_mismatched_message_to_console).toLowerCase() === 'true') {
+                console.log(chatMessageForConsole);
             }
-            if (Boolean(configValue.feature.log_mismatched_message_to_console) === true) {
-                console.log(String(chatMessage.toAnsi()).replace(RegExp(/[\`]{3}/, 'g'), '`'));
-            }
-            if (Boolean(configValue.feature.log_mismatched_message_to_discord) === true) {
+            if (String(configValue.feature.log_mismatched_message_to_discord).toLowerCase() === 'true') {
 
                 const mismatchedMessageChannelID = configValue.discord_channel.mismatched_message;
 
@@ -414,7 +402,7 @@ module.exports = {
                 if (discordBot.guilds.cache.get(guildID).channels.cache.get(mismatchedMessageChannelID) !== undefined) {
                     if (discordBot.guilds.cache.get(guildID).channels.cache.get(mismatchedMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(mismatchedMessageChannelID).permissionsFor(clientID).has('SendMessages') === true) {
-                            await discordBot.guilds.cache.get(guildID).channels.cache.get(mismatchedMessageChannelID).send({ content: '```' + chatMessage + '```' });
+                            await discordBot.guilds.cache.get(guildID).channels.cache.get(mismatchedMessageChannelID).send({ content: '```' + chatMessageForDiscord + '```' });
                         } else {
                             console.log(`MCHSB » Error occured while logging mismatched messages in #${mismatchedMessageChannelName}!`);
                         }
