@@ -1,27 +1,47 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('sudo')
-		.setDescription('EDIT LATER.')
-		.setDMPermission(false),
-	async execute(discordInteractionResult, discordInteractionDetails) {
+    data: new SlashCommandBuilder()
+        .setName('sudo')
+        .setDescription('Run A Command Ingame. [Admin User Command]')
+        .setDMPermission(false)
+        .addStringOption(commandToRun =>
+            commandToRun.setName('command-to-run')
+                .setDescription('Command To Run.')
+                .setRequired(true)
+                .setMinLength(1)
+                .setMaxLength(192)),
+    async execute(discordInteractionResultDetails, discordInteractionDetails, configValue, staffBot) {
 
-		discordInteractionResult.interactionFullCommand = `/${discordInteractionDetails.commandName}`;
+        const commandToRun = String(discordInteractionDetails.options.getString('command-to-run'));
 
-		try {
-			await discordInteractionDetails.editReply({ content: 'TEST', ephemeral: false }).then(() => {
+        discordInteractionResultDetails.interactionFullCommand = `/${discordInteractionDetails.commandName} command-to-run:${commandToRun}`;
 
-				discordInteractionResult.interactionResult = true;
+        try {
 
-			});
-		} catch {
-			await discordInteractionDetails.editReply({ content: '```Error occured while executing this command!```', ephemeral: false }).then(() => {
+            const discordSlashCommandWhitelistedRolesID = [configValue.role_id.bot_admin];
 
-				discordInteractionResult.interactionResult = 'ERROR';
+            if (discordInteractionDetails.member.roles.cache.some(discordUserRoles => discordSlashCommandWhitelistedRolesID.includes(discordUserRoles.id)) !== true) {
+                await discordInteractionDetails.editReply({ content: '```You are not allowed to run this command!```', ephemeral: false }).then(() => {
 
-			});
-		}
-		return discordInteractionResult;
-	}
+                    discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = 'User has insufficient permission!';
+
+                });
+            } else {
+                staffBot.chat(`/${commandToRun}`);
+                await discordInteractionDetails.editReply({ content: '```' + `Successfully ran "/${commandToRun}" ingame.` + '```', ephemeral: false }).then(() => {
+
+                    discordInteractionResultDetails.interactionResult = true;
+
+                });
+            }
+        } catch {
+            await discordInteractionDetails.editReply({ content: '```Error occured while executing this command!```', ephemeral: false }).then(() => {
+
+                discordInteractionResultDetails.interactionResult = 'ERROR';
+
+            });
+        }
+        return discordInteractionResultDetails;
+    }
 };
