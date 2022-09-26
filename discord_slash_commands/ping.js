@@ -28,7 +28,7 @@ module.exports = {
                     break;
                 case true:
 
-                    const staffBotUsername = staffBot.username;
+                    const staffBotUsername = String(staffBot.username);
 
                     const pingPlayerIGNEmbed = new EmbedBuilder()
                         .setTitle('INGAME PING')
@@ -56,7 +56,7 @@ module.exports = {
 
                                 const staffBotPing = staffBotPingDetails[1];
 
-                                const pingPlayerIGNEmbedDescription = `IGN: ${staffBotUsername}\n` + `Ping: ${staffBotPing}ms`;
+                                const pingPlayerIGNEmbedDescription = `IGN: ${staffBotUsername.replace(RegExp(/[\_]/, 'g'), '\\_')}\n` + `Ping: ${staffBotPing}ms`;
 
                                 pingPlayerIGNEmbed.setDescription(pingPlayerIGNEmbedDescription);
                                 await discordInteractionDetails.editReply({ embeds: [pingPlayerIGNEmbed], ephemeral: false }).then(() => {
@@ -88,7 +88,7 @@ module.exports = {
 
                                     const playerIGNPing = playerIGNPingDetails[2];
 
-                                    const pingPlayerIGNEmbedDescription = `IGN: ${playerIGNActualIGN}\n` + `Ping: ${playerIGNPing}ms`;
+                                    const pingPlayerIGNEmbedDescription = `IGN: ${playerIGNActualIGN.replace(RegExp(/[\_]/, 'g'), '\\_')}\n` + `Ping: ${playerIGNPing}ms`;
 
                                     pingPlayerIGNEmbed.setDescription(pingPlayerIGNEmbedDescription);
                                     await discordInteractionDetails.editReply({ embeds: [pingPlayerIGNEmbed], ephemeral: false }).then(() => {
