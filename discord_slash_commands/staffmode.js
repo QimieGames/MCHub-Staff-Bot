@@ -32,13 +32,13 @@ module.exports = {
                         });
                     } else {
 
-                        const staffBotUsername = staffBot.username;
+                        const staffBotUsername = String(staffBot.username);
 
                         const staffmodeToggledDetails = String(toggleStaffmodeResult).match(staffmodeToggledMessageRegex);
 
                         const staffmodeStatus = staffmodeToggledDetails[1].toUpperCase();
 
-                        const staffmodeToggledEmbedDescription = `IGN: ${staffBotUsername}\n` + `STATUS: ${staffmodeStatus}`;
+                        const staffmodeToggledEmbedDescription = `IGN: ${staffBotUsername.replace(RegExp(/[\_]/, 'g'), '\\_')}\n` + `STATUS: ${staffmodeStatus}`;
 
                         const staffmodeToggledEmbed = new EmbedBuilder()
                             .setTitle('STAFFMODE TOGGLED')
