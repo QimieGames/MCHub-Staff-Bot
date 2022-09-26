@@ -1,27 +1,50 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+
+const nodeFS = require('fs');
 
 module.exports = {
-	data: new SlashCommandBuilder()
-		.setName('help')
-		.setDescription('EDIT LATER.')
-		.setDMPermission(false),
-	async execute(discordInteractionResult, discordInteractionDetails) {
+    data: new SlashCommandBuilder()
+        .setName('help')
+        .setDescription('Shows Commands List.')
+        .setDMPermission(false),
+    async execute(discordSlashCommandFilesDIR, discordEmbedDetails, discordInteractionResultDetails, discordInteractionDetails) {
 
-		discordInteractionResult.interactionFullCommand = `/${discordInteractionDetails.commandName}`;
+        discordInteractionResultDetails.interactionFullCommand = `/${discordInteractionDetails.commandName}`;
 
-		try {
-			await discordInteractionDetails.editReply({ content: 'TEST', ephemeral: false }).then(() => {
+        try {
 
-				discordInteractionResult.interactionResult = true;
+            const discordSlashCommandFilesName = nodeFS.readdirSync(discordSlashCommandFilesDIR).filter(discordSlashCommandFileName => discordSlashCommandFileName.endsWith('.js') && discordSlashCommandFileName !== 'help.js');
 
-			});
-		} catch {
-			await discordInteractionDetails.editReply({ content: '```Error occured while executing this command!```', ephemeral: false }).then(() => {
+            let helpEmbedDescription = '';
 
-				discordInteractionResult.interactionResult = 'ERROR';
+            discordSlashCommandFilesName.forEach((discordSlashCommandFileName) => {
 
-			});
-		}
-		return discordInteractionResult;
-	}
+                const discordSlashCommandFile = require(`./${discordSlashCommandFileName}`);
+
+                helpEmbedDescription = `${helpEmbedDescription} /${discordSlashCommandFile.data.name} -> ${discordSlashCommandFile.data.description}\n\n`;
+
+            });
+
+            const helpEmbed = new EmbedBuilder()
+                .setTitle('COMMANDS LIST')
+                .setColor(discordEmbedDetails.color)
+                .setThumbnail(discordEmbedDetails.thumbnail)
+                .setDescription(helpEmbedDescription)
+                .setFooter(discordEmbedDetails.footer)
+                .setTimestamp();
+
+            await discordInteractionDetails.editReply({ embeds: [helpEmbed], ephemeral: false }).then(() => {
+
+                discordInteractionResultDetails.interactionResult = true;
+
+            });
+        } catch {
+            await discordInteractionDetails.editReply({ content: '```Error occured while executing this command!```', ephemeral: false }).then(() => {
+
+                discordInteractionResultDetails.interactionResult = 'ERROR';
+
+            });
+        }
+        return discordInteractionResultDetails;
+    }
 };
