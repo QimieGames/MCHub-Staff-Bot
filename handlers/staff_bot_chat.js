@@ -4,20 +4,13 @@ module.exports = {
     data: {
         name: 'staff_bot_chat'
     },
-    async execute(configValue, guildID, clientID, discordBot, chatMessage) {
+    async execute(discordEmbedDetails, configValue, guildID, clientID, discordBot, staffBotChatMessage) {
 
         const realmName = String(configValue.staff_bot.realm_name).toLowerCase();
 
         const pixelmonSpecialCharacters = ['ꃫ', 'ꂹ', 'ꂸ', 'ꂺ', 'ꂻ', 'ꂼ', 'ꃏ', 'ꃠ', 'ꃪ', '丷', '', 'ꃥ', 'ꃦ', 'ꃬ', 'ꃧ', 'ꃭ', 'ꃩ', 'ꃨ'];
 
         const pixelmonSpecialCharactersTranslation = ['TRAINER', 'ACE', 'PRO', 'ULTRA', 'MASTER', 'MYTHIC', 'LEGEND', 'PRIMAL', 'MEDIA', 'PARTNER', 'TRIAL', 'HELPER', 'MOD', 'SRMOD', 'BUILDER', 'ADMIN', 'MANAGER', 'DEV', 'OWNER'];
-
-        const discordEmbedFooter =
-
-        {
-            text: 'Custom Coded By QimieGames',
-            iconURL: 'https://i.imgur.com/qTwnd6e.png'
-        };
 
         let publicChatStringRegex, chatToggledStringRegex;
 
@@ -77,7 +70,7 @@ module.exports = {
             chat_toggled: RegExp(chatToggledStringRegex)
         };
 
-        let chatMessageForConsole = String(chatMessage.toAnsi()).replace(RegExp(/[\`]{3}/, 'g'), '`'), chatMessageForDiscord = String(chatMessage).replace(RegExp(/[\`]{3}/, 'g'), '`');
+        let chatMessageForConsole = String(staffBotChatMessage.toAnsi()).replace(RegExp(/[\`]{3}/, 'g'), '`'), chatMessageForDiscord = String(staffBotChatMessage).replace(RegExp(/[\`]{3}/, 'g'), '`');
 
         if (realmName === 'pixelmon') {
             pixelmonSpecialCharacters.forEach((pixelmonSpecialCharacter) => {
@@ -95,11 +88,11 @@ module.exports = {
 
             Object.keys(chatMessageRegex).forEach((chatMessageType) => {
                 if (determineChatMessageTypeFunctionResult === 'mismatched_message') {
-                    if (Boolean(configValue.feature[`log_${chatMessageType}_to_console`]) === true || Boolean(configValue.feature[`log_${chatMessageType}_to_discord`]) === true) {
+                    if (String(configValue.feature[`log_${chatMessageType}_to_console`]).toLowerCase() === 'true' || String(configValue.feature[`log_${chatMessageType}_to_discord`]).toLowerCase() === 'true') {
 
                         const chatMessageTypeRegex = chatMessageRegex[chatMessageType];
 
-                        if (chatMessageTypeRegex.test(chatMessage) === true) {
+                        if (chatMessageTypeRegex.test(staffBotChatMessage) === true) {
 
                             return determineChatMessageTypeFunctionResult = chatMessageType;
 
@@ -114,7 +107,7 @@ module.exports = {
             if (String(configValue.feature[`log_${chatMessageType}_to_console`]).toLowerCase() === 'true') {
                 console.log(chatMessageForConsole);
             }
-            if (String(configValue.feature[`log_${chatMessageType}_to_discord`]).toLowerCase() === 'true') {
+            if (String(configValue.feature[`log_${chatMessageType}_to_discord`]).toLowerCase() === 'true' && String(staffBotChatMessage).length > 8) {
 
                 const chatMessageChannelID = configValue.discord_channel[chatMessageType];
 
@@ -166,7 +159,7 @@ module.exports = {
                             .setDescription(playerReportEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter(discordEmbedFooter);
+                            .setFooter(discordEmbedDetails.footer);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
@@ -204,7 +197,7 @@ module.exports = {
                             .setDescription(helpopEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter(discordEmbedFooter);
+                            .setFooter(discordEmbedDetails.footer);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
@@ -228,7 +221,7 @@ module.exports = {
 
                         const autoClickerAlertPlayerCPS = autoClickerAlertDetails[2];
 
-                        const autoClickerAlertPlayerCPSVarianceDetails = String(chatMessage.hoverEvent.value[0].text).match(RegExp(/^Time Between Clicks\: \[([0-9\, ]+)\]$/));
+                        const autoClickerAlertPlayerCPSVarianceDetails = String(staffBotChatMessage.hoverEvent.value[0].text).match(RegExp(/^Time Between Clicks\: \[([0-9\, ]+)\]$/));
 
                         const autoClickerAlertPlayerCPSVariance = autoClickerAlertPlayerCPSVarianceDetails[1];
 
@@ -240,7 +233,7 @@ module.exports = {
                             .setDescription(autoClickerAlertEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter(discordEmbedFooter);
+                            .setFooter(discordEmbedDetails.footer);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
@@ -272,7 +265,7 @@ module.exports = {
                             .setDescription(afkCheckedAlertEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter(discordEmbedFooter);
+                            .setFooter(discordEmbedDetails.footer);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
@@ -306,7 +299,7 @@ module.exports = {
                             .setDescription(nukerAlertEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter(discordEmbedFooter);
+                            .setFooter(discordEmbedDetails.footer);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
@@ -336,7 +329,7 @@ module.exports = {
                             .setDescription(chatClearedEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter(discordEmbedFooter);
+                            .setFooter(discordEmbedDetails.footer);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
@@ -368,7 +361,7 @@ module.exports = {
                             .setDescription(chatToggledEmbedDescription)
                             .setThumbnail('https://i.imgur.com/7fkLqne.png')
                             .setTimestamp()
-                            .setFooter(discordEmbedFooter);
+                            .setFooter(discordEmbedDetails.footer);
 
                         if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID) !== undefined) {
                             if (discordBot.guilds.cache.get(guildID).channels.cache.get(chatMessageChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
@@ -393,7 +386,7 @@ module.exports = {
             if (String(configValue.feature.log_mismatched_message_to_console).toLowerCase() === 'true') {
                 console.log(chatMessageForConsole);
             }
-            if (String(configValue.feature.log_mismatched_message_to_discord).toLowerCase() === 'true') {
+            if (String(configValue.feature.log_mismatched_message_to_discord).toLowerCase() === 'true' && String(staffBotChatMessage).length > 8) {
 
                 const mismatchedMessageChannelID = configValue.discord_channel.mismatched_message;
 

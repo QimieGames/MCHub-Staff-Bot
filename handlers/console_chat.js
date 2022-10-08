@@ -3,7 +3,6 @@ module.exports = {
         name: 'console_chat'
     },
     execute(consoleChatInput, discordBot, staffBot) {
-
         if (consoleChatInput !== '') {
 
             const emptyConsoleChatInputRegex = new RegExp(/^[ ]+$/);
@@ -28,26 +27,26 @@ module.exports = {
                         case 'restart':
                             console.log('MCHSB » Restarting staff bot...');
                             try {
-                                console.log('MCHSB » Disconnecting from the Discord Bot...');
-                                discordBot.destroy();
-                                console.log('MCHSB » Disconnected from the Discord Bot.');
                                 console.log('MCHSB » Disconnecting from MCHub.COM...');
                                 staffBot.end();
                                 console.log('MCHSB » Disconnected from MCHub.COM.');
+                                console.log('MCHSB » Disconnecting from the Discord Bot...');
+                                discordBot.destroy();
+                                console.log('MCHSB » Disconnected from the Discord Bot.');
                             } catch {
-                                console.log('MCHSB » Error occured while shutting down staff bot! Forcing staff bot to restart...');
+                                console.log('MCHSB » Error occured while restarting staff bot! Force restarting staff bot...');
                             }
                             process.exit(0);
                             break;
                         case 'quit':
                             console.log('MCHSB » Shutting down staff bot...');
                             try {
-                                console.log('MCHSB » Disconnecting from the Discord Bot...');
-                                discordBot.destroy();
-                                console.log('MCHSB » Disconnected from the Discord Bot.');
                                 console.log('MCHSB » Disconnecting from MCHub.COM...');
                                 staffBot.end();
                                 console.log('MCHSB » Disconnected from MCHub.COM.');
+                                console.log('MCHSB » Disconnecting from the Discord Bot...');
+                                discordBot.destroy();
+                                console.log('MCHSB » Disconnected from the Discord Bot.');
                             } catch {
                                 console.log('MCHSB » Error occured while shutting down staff bot! Forcing staff bot to shutdown...');
                             }

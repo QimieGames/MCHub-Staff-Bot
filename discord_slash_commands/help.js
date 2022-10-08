@@ -7,11 +7,10 @@ module.exports = {
         .setName('help')
         .setDescription('Shows Commands List.')
         .setDMPermission(false),
-    async execute(discordSlashCommandFilesDIR, discordEmbedDetails, discordInteractionResultDetails, discordInteractionDetails) {
-
-        discordInteractionResultDetails.interactionFullCommand = `/${discordInteractionDetails.commandName}`;
-
+    async execute(discordSlashCommandFilesDIR, discordEmbedDetails, discordSlashCommandHandlerResultDetails, discordSlashCommandDetails) {
         try {
+
+            discordSlashCommandHandlerResultDetails.fullCommand = `/${discordSlashCommandDetails.commandName}`;
 
             const discordSlashCommandFilesName = nodeFS.readdirSync(discordSlashCommandFilesDIR).filter(discordSlashCommandFileName => discordSlashCommandFileName.endsWith('.js') && discordSlashCommandFileName !== 'help.js');
 
@@ -33,18 +32,18 @@ module.exports = {
                 .setFooter(discordEmbedDetails.footer)
                 .setTimestamp();
 
-            await discordInteractionDetails.editReply({ embeds: [helpEmbed], ephemeral: false }).then(() => {
+            await discordSlashCommandDetails.editReply({ embeds: [helpEmbed], ephemeral: false }).then(() => {
 
-                discordInteractionResultDetails.interactionResult = true;
+                discordSlashCommandHandlerResultDetails.result = true;
 
             });
         } catch {
-            await discordInteractionDetails.editReply({ content: '```Error occured while executing this command!```', ephemeral: false }).then(() => {
+            await discordSlashCommandDetails.editReply({ content: '```Error occured while executing this command!```', ephemeral: false }).then(() => {
 
-                discordInteractionResultDetails.interactionResult = 'ERROR';
+                discordSlashCommandHandlerResultDetails.result = 'ERROR';
 
             });
         }
-        return discordInteractionResultDetails;
+        return discordSlashCommandHandlerResultDetails;
     }
 };

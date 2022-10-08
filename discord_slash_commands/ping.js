@@ -11,18 +11,25 @@ module.exports = {
                 .setRequired(true)
                 .setMinLength(3)
                 .setMaxLength(17)),
-    async execute(discordEmbedDetails, discordInteractionResultDetails, discordInteractionDetails, staffBot, isMinecraftUsernameValid) {
-
-        const playerIGN = String(discordInteractionDetails.options.getString('player-ign'));
-
-        discordInteractionResultDetails.interactionFullCommand = `/${discordInteractionDetails.commandName} player-ign:${playerIGN}`;
-
+    async execute(discordEmbedDetails, discordSlashCommandHandlerResultDetails, discordSlashCommandDetails, staffBot, isMinecraftUsernameValid) {
         try {
-            switch (isMinecraftUsernameValid(playerIGN)) {
-                case false:
-                    await discordInteractionDetails.editReply({ content: '```' + `${playerIGN} is not a valid Minecraft Username!` + '```', ephemeral: false }).then(() => {
 
-                        discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = `Invalid Minecraft Username provided!`;
+            const playerIGN = String(discordSlashCommandDetails.options.getString('player-ign'));
+
+            discordSlashCommandHandlerResultDetails.fullCommand = `/${discordSlashCommandDetails.commandName} player-ign:${playerIGN}`;
+
+            switch (isMinecraftUsernameValid(playerIGN)) {
+                default:
+                    await discordSlashCommandDetails.editReply({ content: '```Error occured while executing isMinecraftUsernameValid function!```', ephemeral: false }).then(() => {
+
+                        discordSlashCommandHandlerResultDetails.result = 'ERROR';
+
+                    });
+                    break;
+                case false:
+                    await discordSlashCommandDetails.editReply({ content: '```' + `${playerIGN} is not a valid Minecraft Username!` + '```', ephemeral: false }).then(() => {
+
+                        discordSlashCommandHandlerResultDetails.result = false, discordSlashCommandHandlerResultDetails.failedReason = `${playerIGN} is not a valid Minecraft Username!`;
 
                     });
                     break;
@@ -43,11 +50,11 @@ module.exports = {
 
                         pingPlayerIGNMessageRegex = RegExp(/^MCHUB \» Your ping is ([0-9]+) ms/);
 
-                        pingPlayerIGN = staffBot.findMessage(10000, pingPlayerIGNMessageRegex).then(async (pingPlayerIGNResult) => {
+                        pingPlayerIGN = staffBot.findMessage(8000, pingPlayerIGNMessageRegex).then(async (pingPlayerIGNResult) => {
                             if (pingPlayerIGNResult === false) {
-                                await discordInteractionDetails.editReply({ content: "```Failed to obtain staff bot's ingame ping!```", ephemeral: false }).then(() => {
+                                await discordSlashCommandDetails.editReply({ content: "```Failed to obtain staff bot's ingame ping!```", ephemeral: false }).then(() => {
 
-                                    discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = "Failed to obtain staff bot's ingame ping!";
+                                    discordSlashCommandHandlerResultDetails.result = 'ERROR';
 
                                 });
                             } else {
@@ -59,9 +66,9 @@ module.exports = {
                                 const pingPlayerIGNEmbedDescription = `IGN: ${staffBotUsername.replace(RegExp(/[\_]/, 'g'), '\\_')}\n` + `Ping: ${staffBotPing}ms`;
 
                                 pingPlayerIGNEmbed.setDescription(pingPlayerIGNEmbedDescription);
-                                await discordInteractionDetails.editReply({ embeds: [pingPlayerIGNEmbed], ephemeral: false }).then(() => {
+                                await discordSlashCommandDetails.editReply({ embeds: [pingPlayerIGNEmbed], ephemeral: false }).then(() => {
 
-                                    discordInteractionResultDetails.interactionResult = true;
+                                    discordSlashCommandHandlerResultDetails.result = true;
 
                                 });
                             }
@@ -71,11 +78,11 @@ module.exports = {
 
                         pingPlayerIGNMessageRegex = RegExp(/^MCHUB \» ([0-9A-Za-z\_\*]{3,17})'s ping is ([0-9]+) ms|MCHUB \» No one by the name of ([0-9A-Za-z\_\*]{3,17}) is online\!/, 'i');
 
-                        pingPlayerIGN = staffBot.findMessage(10000, pingPlayerIGNMessageRegex).then(async (pingPlayerIGNResult) => {
+                        pingPlayerIGN = staffBot.findMessage(8000, pingPlayerIGNMessageRegex).then(async (pingPlayerIGNResult) => {
                             if (pingPlayerIGNResult === false) {
-                                await discordInteractionDetails.editReply({ content: '```' + `Failed to obtain ${playerIGN}'s ingame ping!` + '```', ephemeral: false }).then(() => {
+                                await discordSlashCommandDetails.editReply({ content: '```' + `Failed to obtain ${playerIGN}'s ingame ping!` + '```', ephemeral: false }).then(() => {
 
-                                    discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = `Failed to obtain ${playerIGN}'s ingame ping!`;
+                                    discordSlashCommandHandlerResultDetails.result = 'ERROR';
 
                                 });
                             } else {
@@ -91,15 +98,15 @@ module.exports = {
                                     const pingPlayerIGNEmbedDescription = `IGN: ${playerIGNActualIGN.replace(RegExp(/[\_]/, 'g'), '\\_')}\n` + `Ping: ${playerIGNPing}ms`;
 
                                     pingPlayerIGNEmbed.setDescription(pingPlayerIGNEmbedDescription);
-                                    await discordInteractionDetails.editReply({ embeds: [pingPlayerIGNEmbed], ephemeral: false }).then(() => {
+                                    await discordSlashCommandDetails.editReply({ embeds: [pingPlayerIGNEmbed], ephemeral: false }).then(() => {
 
-                                        discordInteractionResultDetails.interactionResult = true;
+                                        discordSlashCommandHandlerResultDetails.result = true;
 
                                     });
                                 } else {
-                                    await discordInteractionDetails.editReply({ content: '```' + `Failed to obtain ${playerIGN}'s ingame ping as they are offline!` + '```', ephemeral: false }).then(() => {
+                                    await discordSlashCommandDetails.editReply({ content: '```' + `Failed to obtain ${playerIGN}'s ingame ping as they are offline!` + '```', ephemeral: false }).then(() => {
 
-                                        discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = `Failed to obtain ${playerIGN}'s ingame ping as they are offline!`;
+                                        discordSlashCommandHandlerResultDetails.result = false, discordSlashCommandHandlerResultDetails.failedReason = `Failed to obtain ${playerIGN}'s ingame ping as they are offline!`;
 
                                     });
                                 }
@@ -112,12 +119,12 @@ module.exports = {
                     break;
             }
         } catch {
-            await discordInteractionDetails.editReply({ content: '```Error occured while executing this command!```', ephemeral: false }).then(() => {
+            await discordSlashCommandDetails.editReply({ content: '```Error occured while executing this command!```', ephemeral: false }).then(() => {
 
-                discordInteractionResultDetails.interactionResult = 'ERROR';
+                discordSlashCommandHandlerResultDetails.result = 'ERROR';
 
             });
         }
-        return discordInteractionResultDetails;
+        return discordSlashCommandHandlerResultDetails;
     }
 };

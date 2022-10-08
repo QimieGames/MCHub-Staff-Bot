@@ -10,20 +10,19 @@ module.exports = {
                 .setDescription('Discord User ID.')
                 .setRequired(true)
                 .setMinLength(1)),
-    async execute(discordInteractionResultDetails, discordInteractionDetails, configValue, guildID, clientID, discordBot) {
-
-        const discordUserID = String(discordInteractionDetails.options.getString('discord-user-id'));
-
-        discordInteractionResultDetails.interactionFullCommand = `/${discordInteractionDetails.commandName} discord-user-id:${discordUserID}`;
-
+    async execute(discordSlashCommandHandlerResultDetails, discordSlashCommandDetails, configValue, guildID, clientID, discordBot) {
         try {
+
+            const discordUserID = String(discordSlashCommandDetails.options.getString('discord-user-id'));
+
+            discordSlashCommandHandlerResultDetails.fullCommand = `/${discordSlashCommandDetails.commandName} discord-user-id:${discordUserID}`;
 
             const discordSlashCommandWhitelistedRolesID = [configValue.role_id.bot_admin];
 
-            if (discordInteractionDetails.member.roles.cache.some(discordUserRoles => discordSlashCommandWhitelistedRolesID.includes(discordUserRoles.id)) !== true) {
-                await discordInteractionDetails.editReply({ content: '```You are not allowed to run this command!```', ephemeral: false }).then(() => {
+            if (discordSlashCommandDetails.member.roles.cache.some(discordUserRoles => discordSlashCommandWhitelistedRolesID.includes(discordUserRoles.id)) !== true) {
+                await discordSlashCommandDetails.editReply({ content: '```You are not allowed to run this command!```', ephemeral: false }).then(() => {
 
-                    discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = 'User has insufficient permission!';
+                    discordSlashCommandHandlerResultDetails.result = false, discordSlashCommandHandlerResultDetails.failedReason = 'User has insufficient permission!';
 
                 });
             } else {
@@ -32,16 +31,16 @@ module.exports = {
 
                 switch (discordUserIDRegex.test(discordUserID)) {
                     default:
-                        await discordInteractionDetails.editReply({ content: '```Error occured while verifying Discord User ID provided!```', ephemeral: false }).then(() => {
+                        await discordSlashCommandDetails.editReply({ content: '```Error occured while verifying Discord User ID provided!```', ephemeral: false }).then(() => {
 
-                            discordInteractionResultDetails.interactionResult = 'ERROR';
+                            discordSlashCommandHandlerResultDetails.result = 'ERROR';
 
                         });
                         break;
                     case false:
-                        await discordInteractionDetails.editReply({ content: '```' + `${discordUserID} is not a Discord User ID!` + '```', ephemeral: false }).then(() => {
+                        await discordSlashCommandDetails.editReply({ content: '```' + `${discordUserID} is not a Discord User ID!` + '```', ephemeral: false }).then(() => {
 
-                            discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = `${discordUserID} is not a Discord User ID!`;
+                            discordSlashCommandHandlerResultDetails.result = false, discordSlashCommandHandlerResultDetails.failedReason = `${discordUserID} is not a Discord User ID!`;
 
                         });
                         break;
@@ -52,39 +51,39 @@ module.exports = {
                         });
 
                         if (discordUser === undefined) {
-                            await discordInteractionDetails.editReply({ content: '```' + `${discordUserID} is not a valid Discord User ID!` + '```', ephemeral: false }).then(() => {
+                            await discordSlashCommandDetails.editReply({ content: '```' + `${discordUserID} is not a valid Discord User ID!` + '```', ephemeral: false }).then(() => {
 
-                                discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = `${discordUserID} is not a valid Discord User ID!`;
+                                discordSlashCommandHandlerResultDetails.result = false, discordSlashCommandHandlerResultDetails.failedReason = `${discordUserID} is not a valid Discord User ID!`;
 
                             });
                         } else {
 
-                            const staffBotBlacklistedUserRoleID = [configValue.role_id.bot_blacklisted];
+                            const staffBotBlacklistedUserRoleID = configValue.role_id.bot_blacklisted;
 
-                            if (discordUser.roles.cache.some(discordUserRoles => staffBotBlacklistedUserRoleID.includes(discordUserRoles.id)) !== true) {
-                                await discordInteractionDetails.editReply({ content: '```The user is not blacklisted from using this staff bot!```', ephemeral: false }).then(() => {
+                            if (discordUser.roles.cache.some(discordUserRoles => discordUserRoles.id === staffBotBlacklistedUserRoleID) !== true) {
+                                await discordSlashCommandDetails.editReply({ content: '```The user is not blacklisted from using this staff bot!```', ephemeral: false }).then(() => {
 
-                                    discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = 'The user is not blacklisted from using this staff bot!';
+                                    discordSlashCommandHandlerResultDetails.result = false, discordSlashCommandHandlerResultDetails.failedReason = 'The user is not blacklisted from using this staff bot!';
 
                                 });
                             } else {
                                 if (discordBot.guilds.cache.get(guildID).members.cache.get(clientID).permissions.has('ManageRoles', true) !== true) {
-                                    await discordInteractionDetails.editReply({ content: '```Staff bot has insufficient permission to manage roles!```', ephemeral: false }).then(() => {
+                                    await discordSlashCommandDetails.editReply({ content: '```Staff bot has insufficient permission to manage roles!```', ephemeral: false }).then(() => {
 
-                                        discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = 'Staff bot has insufficient permission to manage roles!';
+                                        discordSlashCommandHandlerResultDetails.result = false, discordSlashCommandHandlerResultDetails.failedReason = 'Staff bot has insufficient permission to manage roles!';
 
                                     });
                                 } else {
                                     await discordUser.roles.remove(staffBotBlacklistedUserRoleID).then(async () => {
-                                        await discordInteractionDetails.editReply({ content: '```Successfully unblacklisted the user from using this staff bot.```', ephemeral: false }).then(() => {
+                                        await discordSlashCommandDetails.editReply({ content: '```Successfully unblacklisted the user from using this staff bot.```', ephemeral: false }).then(() => {
 
-                                            discordInteractionResultDetails.interactionResult = true;
+                                            discordSlashCommandHandlerResultDetails.result = true;
 
                                         });
                                     }).catch(async () => {
-                                        await discordInteractionDetails.editReply({ content: '```Error occured while unblacklisting the user from using this staff bot!```', ephemeral: false }).then(() => {
+                                        await discordSlashCommandDetails.editReply({ content: '```Error occured while unblacklisting the user from using this staff bot!```', ephemeral: false }).then(() => {
 
-                                            discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = 'Error occured while unblacklisting the user from using this staff bot!';
+                                            discordSlashCommandHandlerResultDetails.result = 'ERROR';
 
                                         });
                                     });
@@ -95,12 +94,12 @@ module.exports = {
                 }
             }
         } catch {
-            await discordInteractionDetails.editReply({ content: '```Error occured while executing this command!```', ephemeral: false }).then(() => {
+            await discordSlashCommandDetails.editReply({ content: '```Error occured while executing this command!```', ephemeral: false }).then(() => {
 
-                discordInteractionResultDetails.interactionResult = 'ERROR';
+                discordSlashCommandHandlerResultDetails.result = 'ERROR';
 
             });
         }
-        return discordInteractionResultDetails;
+        return discordSlashCommandHandlerResultDetails;
     }
 };

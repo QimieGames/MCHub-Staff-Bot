@@ -39,17 +39,16 @@ module.exports = {
                 setTimeout(async () => {
                     try {
                         console.log('MCHSB » Staff bot is being restarted due to scheduled restart...');
-                        console.log('MCHSB » Disconnecting from the Discord Bot...');
-                        discordBot.destroy();
-                        console.log('MCHSB » Disconnected from the Discord Bot.');
                         console.log('MCHSB » Disconnecting from MCHub.COM...');
                         staffBot.end();
                         console.log('MCHSB » Disconnected from MCHub.COM.');
-                        process.exit(0);
+                        console.log('MCHSB » Disconnecting from the Discord Bot...');
+                        discordBot.destroy();
+                        console.log('MCHSB » Disconnected from the Discord Bot.');
                     } catch {
                         console.log('MCHSB » Error occured while restarting staff bot! Force restarting staff bot...');
-                        process.exit(0);
                     }
+                    process.exit(0);
                 }, 86400000);
             }
 

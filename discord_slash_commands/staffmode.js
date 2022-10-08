@@ -5,29 +5,28 @@ module.exports = {
         .setName('staffmode')
         .setDescription('Toggle Staffmode Ingame. [Trusted+ User Command]')
         .setDMPermission(false),
-    async execute(discordEmbedDetails, discordInteractionResultDetails, discordInteractionDetails, configValue, staffBot) {
-
-        discordInteractionResultDetails.interactionFullCommand = `/${discordInteractionDetails.commandName}`;
-
+    async execute(discordEmbedDetails, discordSlashCommandHandlerResultDetails, discordSlashCommandDetails, configValue, staffBot) {
         try {
+
+            discordSlashCommandHandlerResultDetails.fullCommand = `/${discordSlashCommandDetails.commandName}`;
 
             const discordSlashCommandWhitelistedRolesID = [configValue.role_id.bot_admin, configValue.role_id.bot_trusted];
 
-            if (discordInteractionDetails.member.roles.cache.some(discordUserRoles => discordSlashCommandWhitelistedRolesID.includes(discordUserRoles.id)) !== true) {
-                await discordInteractionDetails.editReply({ content: '```You are not allowed to run this command!```', ephemeral: false }).then(() => {
+            if (discordSlashCommandDetails.member.roles.cache.some(discordUserRoles => discordSlashCommandWhitelistedRolesID.includes(discordUserRoles.id)) !== true) {
+                await discordSlashCommandDetails.editReply({ content: '```You are not allowed to run this command!```', ephemeral: false }).then(() => {
 
-                    discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = 'User has insufficient permission!';
+                    discordSlashCommandHandlerResultDetails.result = false, discordSlashCommandHandlerResultDetails.failedReason = 'User has insufficient permission!';
 
                 });
             } else {
 
                 const staffmodeToggledMessageRegex = RegExp(/^STAFF \» Successfully (enabled|disabled) staff mode\!/);
 
-                const toggleStaffmode = staffBot.findMessage(10000, staffmodeToggledMessageRegex).then(async (toggleStaffmodeResult) => {
+                const toggleStaffmode = staffBot.findMessage(8000, staffmodeToggledMessageRegex).then(async (toggleStaffmodeResult) => {
                     if (toggleStaffmodeResult === false) {
-                        await discordInteractionDetails.editReply({ content: '```Error occured while toggling staffmode!```', ephemeral: false }).then(() => {
+                        await discordSlashCommandDetails.editReply({ content: '```Failed to toggle staffmode!```', ephemeral: false }).then(() => {
 
-                            discordInteractionResultDetails.interactionResult = false, discordInteractionResultDetails.interactionFailedReason = 'Error occured while toggling staffmode!';
+                            discordSlashCommandHandlerResultDetails.result = 'ERROR';
 
                         });
                     } else {
@@ -48,9 +47,9 @@ module.exports = {
                             .setFooter(discordEmbedDetails.footer)
                             .setTimestamp();
 
-                        await discordInteractionDetails.editReply({ embeds: [staffmodeToggledEmbed], ephemeral: false }).then(() => {
+                        await discordSlashCommandDetails.editReply({ embeds: [staffmodeToggledEmbed], ephemeral: false }).then(() => {
 
-                            discordInteractionResultDetails.interactionResult = true;
+                            discordSlashCommandHandlerResultDetails.result = true;
 
                         });
                     }
@@ -60,12 +59,12 @@ module.exports = {
                 await toggleStaffmode;
             }
         } catch {
-            await discordInteractionDetails.editReply({ content: '```Error occured while executing this command!```', ephemeral: false }).then(() => {
+            await discordSlashCommandDetails.editReply({ content: '```Error occured while executing this command!```', ephemeral: false }).then(() => {
 
-                discordInteractionResultDetails.interactionResult = 'ERROR';
+                discordSlashCommandHandlerResultDetails.result = 'ERROR';
 
             });
         }
-        return discordInteractionResultDetails;
+        return discordSlashCommandHandlerResultDetails;
     }
 };

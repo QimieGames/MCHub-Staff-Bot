@@ -2,15 +2,25 @@ require('dotenv').config();
 
 const nodeFS = require('fs');
 
-const DiscordJS = require('discord.js');
+const readline = require('readline');
 
 const mineflayer = require('mineflayer');
 
 const { REST } = require('@discordjs/rest');
 
-const { Routes } = require('discord-api-types/v10');
+const { Routes, ActivityType } = require('discord-api-types/v10');
 
-const readline = require('readline');
+const { IntentsBitField, Partials, Client, Collection, EmbedBuilder } = require('discord.js');
+
+const importantDIR =
+
+{
+    handler: './handlers/',
+    discord_slash_command: './discord_slash_commands/',
+    error_log: './error_logs/',
+    data: './data/',
+    staffstats_data: './data/staffstats/'
+};
 
 const defaultEnvFileLayout =
 
@@ -84,82 +94,87 @@ const defaultConfigFileLayout =
     }
 };
 
-const importantDIR =
-
-{
-    handler: './handlers/',
-    discord_slash_command: './discord_slash_commands/',
-    error_log: './error_logs/',
-    data: './data/',
-    staffstats_data: './data/staffstats/'
-};
-
 const discordBotIntents =
 
     [
-        DiscordJS.IntentsBitField.Flags.Guilds,
-        DiscordJS.IntentsBitField.Flags.GuildMembers,
-        DiscordJS.IntentsBitField.Flags.GuildMessages,
-        DiscordJS.IntentsBitField.Flags.MessageContent
+        IntentsBitField.Flags.Guilds,
+        IntentsBitField.Flags.GuildMembers,
+        IntentsBitField.Flags.GuildMessages,
+        IntentsBitField.Flags.MessageContent
     ];
 
 const discordBotPartials =
 
     [
-        DiscordJS.Partials.GuildMember,
-        DiscordJS.Partials.Channel,
-        DiscordJS.Partials.Message,
-        DiscordJS.Partials.User
+        Partials.GuildMember,
+        Partials.Channel,
+        Partials.Message,
+        Partials.User
     ];
 
-const discordBot = new DiscordJS.Client({ intents: discordBotIntents, partials: discordBotPartials });
+const discordBot = new Client({ intents: discordBotIntents, partials: discordBotPartials });
 
-let isDiscordSlashCommandsOnCooldown = false;
+const discordEmbedDetails =
 
-let configValue, guildID, clientID, handlers, errorHandler, staffBot, consoleChat;
+{
+    color: '#4422bf',
+    thumbnail: 'https://i.imgur.com/7fkLqne.png',
+    footer: {
+        text: 'Custom Coded By QimieGames',
+        iconURL: 'https://i.imgur.com/qTwnd6e.png'
+    }
+};
 
-discordBot.slashCommands = new DiscordJS.Collection();
+let configValue, guildID, clientID, handlers, staffBot, consoleChat, isStaffBotReady = false, isDiscordBotReady = false, isDiscordSlashCommandsOnCooldown = false;
+
+discordBot.slashCommands = new Collection();
 
 function doesImportantDIRsExists() {
     console.log('MCHSB » Loading important directories...');
 
-    let doesImportantDIRsExistsFunctionResult = true;
+    let doesImportantDIRsExistsFunctionResult;
 
     try {
-        Object.keys(importantDIR).forEach((importantDIRType) => {
+        Object.keys(importantDIR).forEach((importantDIRName) => {
+            if (doesImportantDIRsExistsFunctionResult === undefined || doesImportantDIRsExistsFunctionResult === true) {
 
-            const importantDIRTypeName = importantDIRType.replace(RegExp(/[ ]+/, 'g'), ' ').toLowerCase();
+                const importantDIRNameString = importantDIRName.replace(RegExp(/[\_]/, 'g'), ' ').toLowerCase();
 
-            console.log(`MCHSB » Loading ${importantDIRTypeName} directory...`);
-            try {
-                nodeFS.accessSync(importantDIR[importantDIRType], nodeFS.constants.F_OK);
-                console.log(`MCHSB » Successfully loaded ${importantDIRTypeName} directory.`);
-            } catch {
-                console.log(`MCHSB » Error occured while accessing ${importantDIRTypeName} directory! Generating a new ${importantDIRTypeName} directory...`);
+                const importantDIRPath = importantDIR[importantDIRName];
+
+                console.log(`MCHSB » Loading ${importantDIRNameString} directory.`);
                 try {
-                    nodeFS.mkdirSync(importantDIR[importantDIRType]);
-                    console.log(`MCHSB » Generated a new ${importantDIRTypeName} directory. Attempting to loading it...`);
+                    nodeFS.accessSync(importantDIRPath, nodeFS.constants.F_OK);
+                    console.log(`MCHSB » Successfully loaded ${importantDIRNameString} directory.`);
+
+                    doesImportantDIRsExistsFunctionResult = true;
+
+                } catch {
+                    console.log(`MCHSB » Missing ${importantDIRNameString} directory! Attempting to generate a new one...`);
                     try {
-                        nodeFS.accessSync(importantDIR[importantDIRType], nodeFS.constants.F_OK);
-                        console.log(`MCHSB » Successfully loaded ${importantDIRTypeName} directory.`);
+                        nodeFS.mkdirSync(importantDIRPath);
+                        console.log(`MCHSB » Successfully generated a new ${importantDIRNameString} directory.`);
+
+                        doesImportantDIRsExistsFunctionResult = true;
+
                     } catch {
-                        console.log(`MCHSB » Error occured while loading ${importantDIRTypeName} directory!`);
+                        console.log(`MCHSB » Error occured while generating a new ${importantDIRNameString} directory!`);
 
                         doesImportantDIRsExistsFunctionResult = false;
 
                     }
-                } catch {
-                    console.log(`MCHSB » Error occured while generating a new ${importantDIRTypeName} directory!`);
-
-                    doesImportantDIRsExistsFunctionResult = false;
-
                 }
             }
         });
-    } catch (doesImportantDIRsExistsFunctionError) {
+    } catch {
 
         doesImportantDIRsExistsFunctionResult = false;
 
+    }
+    if (doesImportantDIRsExistsFunctionResult === true) {
+        console.log('MCHSB » Successfully loaded important directories.');
+    } else {
+        console.log('MCHSB » Error occured while loading important directories! Forcing staff bot to shutdown...');
     }
     return doesImportantDIRsExistsFunctionResult;
 }
@@ -167,113 +182,77 @@ function doesImportantDIRsExists() {
 function doesImportantFilesExists() {
     console.log('MCHSB » Loading important files...');
 
-    const defaultHandlerFiles = ['console_chat.js', 'error.js', 'staff_bot_chat.js', 'tasks_scheduler.js'];
+    const defaultHandlerFilesName = ['console_chat.js', 'error_logger.js', 'staff_bot_chat.js', 'tasks_scheduler.js'];
 
-    const defaultDiscordSlashCommandFiles = ['ban.js', 'blacklist.js', 'chat.js', 'dupeip.js', 'export.js', 'help.js', 'hist.js', 'kick.js', 'mute.js', 'prunehist.js', 'restart.js', 'seen.js', 'staffmode.js', 'staffstats.js', 'sudo.js', 'unban.js', 'unblacklist.js', 'unmute.js', 'unwarn.js', 'warn.js'];
+    const defaultDiscordSlashCommandFilesName = ['blacklist.js', 'chat.js', 'dupeip.js', 'export.js', 'help.js', 'hist.js', 'ping.js', 'prunehist.js', 'restart.js', 'seen.js', 'staffmode.js', 'staffstats.js', 'sudo.js', 'unblacklist.js'];
 
-    let doesImportantFilesExistsFunctionResult = true;
+    const defaultOtherImportantFilesName = ['package.json', 'package-lock.json', 'LICENSE'];
+
+    let missingImportantFilesName = new Array(), extraFiles = new Array();
 
     try {
 
-        const currentHandlerFiles = nodeFS.readdirSync(importantDIR.handler, 'utf-8').filter(currentHandlerFilesName => currentHandlerFilesName.endsWith('.js'));
+        const currentHandlerFilesName = nodeFS.readdirSync(importantDIR.handler).filter(currentHandlerFileName => currentHandlerFileName.endsWith('.js'));
 
-        const currentDiscordSlashCommandFiles = nodeFS.readdirSync(importantDIR.discord_slash_command, 'utf-8').filter(currentDiscordSlashCommandFilesName => currentDiscordSlashCommandFilesName.endsWith('.js'));
+        const currentDiscordSlashCommandFilesName = nodeFS.readdirSync(importantDIR.discord_slash_command).filter(currentDiscordSlashCommandFileName => currentDiscordSlashCommandFileName.endsWith('.js'));
 
-        let missingFiles = new Array();
-
-        defaultHandlerFiles.forEach((defaultHandlerFileName) => {
-            if (currentHandlerFiles.includes(defaultHandlerFileName) === false) {
-                if (missingFiles.includes(defaultHandlerFileName) === false) {
-                    missingFiles.push(defaultHandlerFileName);
-                }
-
-                doesImportantFilesExistsFunctionResult = false;
-
+        defaultHandlerFilesName.forEach((defaultHandlerFileName) => {
+            if (currentHandlerFilesName.includes(defaultHandlerFileName) === false) {
+                missingImportantFilesName.push(defaultHandlerFileName);
             }
         });
-        currentHandlerFiles.forEach((currentHandlerFileName) => {
-            if (defaultHandlerFiles.includes(currentHandlerFileName) === false) {
-                if (missingFiles.includes(currentHandlerFileName) === false) {
-                    missingFiles.push(currentHandlerFileName);
-                }
-
-                doesImportantFilesExistsFunctionResult = false;
-
+        defaultDiscordSlashCommandFilesName.forEach((defaultDiscordSlashCommandFileName) => {
+            if (currentDiscordSlashCommandFilesName.includes(defaultDiscordSlashCommandFileName) === false) {
+                missingImportantFilesName.push(defaultDiscordSlashCommandFileName);
             }
         });
-        defaultDiscordSlashCommandFiles.forEach((defaultDiscordSlashCommandFileName) => {
-            if (currentDiscordSlashCommandFiles.includes(defaultDiscordSlashCommandFileName) === false) {
-                if (missingFiles.includes(defaultDiscordSlashCommandFileName) === false) {
-                    missingFiles.push(defaultDiscordSlashCommandFileName);
-                }
-
-                doesImportantFilesExistsFunctionResult = false;
-
-            }
-        });
-        currentDiscordSlashCommandFiles.forEach((currentDiscordSlashCommandFileName) => {
-            if (defaultDiscordSlashCommandFiles.includes(currentDiscordSlashCommandFileName) === false) {
-                if (missingFiles.includes(currentDiscordSlashCommandFileName) === false) {
-                    missingFiles.push(currentDiscordSlashCommandFileName);
-                }
-
-                doesImportantFilesExistsFunctionResult = false;
-
-            }
-        });
-        console.log('MCHSB » Loading license file...');
-        try {
-            nodeFS.accessSync('LICENSE', nodeFS.constants.F_OK);
-            console.log('MCHSB » Successfully loaded license file.');
+        defaultOtherImportantFilesName.forEach((defaultOtherImportantFileName) => {
             try {
-                console.log('MCHSB » Loading package file...');
-                nodeFS.accessSync('package.json', nodeFS.constants.F_OK);
-                console.log('MCHSB » Successfully loaded package file.');
-                try {
-                    console.log('MCHSB » Loading package lock file...');
-                    nodeFS.accessSync('package-lock.json', nodeFS.constants.F_OK);
-                    console.log('MCHSB » Successfully loaded package lock file.');
-                } catch {
-                    console.log('MCHSB » Error occured while loading package lock file!');
-                    missingFiles.push('package-lock.json');
-
-                    doesImportantFilesExistsFunctionResult = false;
-
-                }
+                nodeFS.accessSync(defaultOtherImportantFileName, nodeFS.constants.F_OK);
             } catch {
-                console.log('MCHSB » Error occured while loading package file!');
-                missingFiles.push('package.json');
-
-                doesImportantFilesExistsFunctionResult = false;
-
+                missingImportantFilesName.push(defaultOtherImportantFileName);
             }
-        } catch {
-            console.log('MCHSB » Error occured while loading license file!');
-            missingFiles.push('LICENSE');
+        });
+        currentHandlerFilesName.forEach((currentHandlerFileName) => {
+            if (defaultHandlerFilesName.includes(currentHandlerFileName) === false) {
+                extraFiles.push(currentHandlerFileName);
+            }
+        });
+        currentDiscordSlashCommandFilesName.forEach((currentDiscordSlashCommandFileName) => {
+            if (defaultDiscordSlashCommandFilesName.includes(currentDiscordSlashCommandFileName) === false) {
+                extraFiles.push(currentDiscordSlashCommandFileName);
+            }
+        });
+        if (missingImportantFilesName.length === 0 && extraFiles.length === 0) {
+            console.log('MCHSB » Successfully loaded important files.');
+            return true;
+        } else {
+            if (missingImportantFilesName.length > 0) {
 
-            doesImportantFilesExistsFunctionResult = false;
+                missingImportantFilesName = missingImportantFilesName.join(', ');
 
+                console.log(`MCHSB » Missing Important Files: ${missingImportantFilesName}`);
+            }
+            if (extraFiles.length > 0) {
+
+                extraFiles = extraFiles.join(', ');
+
+                console.log(`MCHSB » Extra Files: ${extraFiles}`);
+            }
         }
-        if (missingFiles.length !== 0) {
-
-            missingFiles = missingFiles.join(', ');
-
-            console.log(`MCHSB » Missing Files: ${missingFiles}`);
-        }
-    } catch (doesImportantFilesExistsFunctionError) {
-
-        doesImportantFilesExistsFunctionResult = false;
-
-    }
-    return doesImportantFilesExistsFunctionResult;
+    } catch { }
+    console.log('MCHSB » Error occured while loading important files! Forcing staff bot to shutdown...');
+    return false;
 }
 
 function doesEnvFileExists() {
-    console.log('MCHSB » Loading .env file...');
+    console.log('MCHSB » Checking if .env file exists...');
     try {
         nodeFS.accessSync('.env', nodeFS.constants.F_OK);
+        console.log('MCHSB » .env file exists.');
         return true;
     } catch {
+        console.log('MCHSB » Missing .env file!');
         return false;
     }
 }
@@ -281,46 +260,67 @@ function doesEnvFileExists() {
 function generateEnvFile() {
     console.log('MCHSB » Generating a new .env file...');
     try {
-        nodeFS.appendFileSync('.env', defaultEnvFileLayout, 'utf-8');
-        return true;
+        nodeFS.appendFileSync('.env', defaultEnvFileLayout);
+        console.log('MCHSB » Successfully generated a new .env file. Please configure it first.');
     } catch {
-        return false;
+        console.log('MCHSB » Error occured while generating a new .env file!');
     }
 }
 
 function isEnvFileValid() {
-    console.log('MCHSB » Validating .env file and its configuration...');
+    console.log('MCHSB » Validating .env file and its configurations...');
     try {
         if (process.env.DISCORD_BOT_TOKEN === undefined || process.env.STAFF_BOT_EMAIL === undefined || process.env.STAFF_BOT_PASSWORD === undefined) {
-            return false;
+            console.log('MCHSB » Invalid .env file!');
         } else {
             if (process.env.DISCORD_BOT_TOKEN === 'DISCORD_BOT_TOKEN_HERE' || process.env.STAFF_BOT_EMAIL === 'STAFF_BOT_EMAIL_HERE' || process.env.STAFF_BOT_PASSWORD === 'STAFF_BOT_PASSWORD_HERE') {
-                return false;
+                console.log('MCHSB » Invalid .env file configuration(s)!');
             } else {
+                console.log('MCHSB » Successfully validated .env file and its configurations.');
                 return true;
             }
         }
-    } catch {
-        return false;
-    }
+    } catch { }
+    console.log('MCHSB » Error occured while validating .env file!');
+    return false;
 }
 
 function reformatEnvFile() {
     console.log('MCHSB » Reformatting .env file...');
     try {
-        nodeFS.writeFileSync('.env', defaultEnvFileLayout, 'utf-8');
-        return true;
+        nodeFS.writeFileSync('.env', defaultEnvFileLayout);
+        console.log('MCHSB » Successfully reformatted .env file. Please configure it first.');
     } catch {
-        return false;
+        console.log('MCHSB » Error occured while reformatting .env file!');
     }
 }
 
+function loadEnvFile() {
+    console.log('MCHSB » Loading .env file...');
+    try {
+        if (doesEnvFileExists() === true) {
+            if (isEnvFileValid() === true) {
+                console.log('MCHSB » Successfully loaded .env file.');
+                return true;
+            } else {
+                reformatEnvFile();
+            }
+        } else {
+            generateEnvFile();
+        }
+    } catch { }
+    console.log('MCHSB » Error occured while loading .env file! Forcing staff bot to shutdown...');
+    return false;
+}
+
 function doesConfigFileExists() {
-    console.log('MCHSB » Loading config file...');
+    console.log('MCHSB » Checking if config file exists...');
     try {
         nodeFS.accessSync('config.json', nodeFS.constants.F_OK);
+        console.log('MCHSB » Config file exists.');
         return true;
     } catch {
+        console.log('MCHSB » Missing config file!');
         return false;
     }
 }
@@ -328,121 +328,84 @@ function doesConfigFileExists() {
 function generateConfigFile() {
     console.log('MCHSB » Generating a new config file...');
     try {
-        nodeFS.appendFileSync('config.json', JSON.stringify(defaultConfigFileLayout, null, 4), 'utf-8');
-        return true;
+        nodeFS.appendFileSync('config.json', JSON.stringify(defaultConfigFileLayout, null, 4));
+        console.log('MCHSB » Successfully generated a new config file. Please configure it first.');
     } catch {
-        return false;
+        console.log('MCHSB » Error occured while generating a new config file!');
     }
 }
 
 function isConfigFileValid() {
-    console.log('MCHSB » Validating config file...');
-
-    let isConfigFileValidFunctionResult = true;
-
+    console.log('MCHSB » Validating config file and its configurations...');
     try {
 
-        configValue = JSON.parse(nodeFS.readFileSync('config.json', 'utf-8'));
+        configValue = JSON.parse(nodeFS.readFileSync('config.json'));
 
-        let defaultConfigObjects = new Array(), currentConfigObjects = new Array();
+        try {
 
-        Object.keys(defaultConfigFileLayout).forEach((defaultConfigMainObject) => {
-            defaultConfigObjects.push(defaultConfigMainObject);
-            Object.keys(defaultConfigFileLayout[defaultConfigMainObject]).forEach((defaultConfigSecondaryObject) => {
-                defaultConfigObjects.push(defaultConfigSecondaryObject);
+            let defaultConfigObjects = new Array(), currentConfigObjects = new Array(), missingConfigurations = new Array(), extraConfigurations = new Array();
+
+            Object.keys(defaultConfigFileLayout).forEach((defaultConfigMainObject) => {
+                Object.keys(defaultConfigFileLayout[defaultConfigMainObject]).forEach((defaultConfigSecondaryObject) => {
+                    defaultConfigObjects.push(`${defaultConfigMainObject}.${defaultConfigSecondaryObject}`);
+                });
             });
-        });
-        Object.keys(configValue).forEach((currentConfigMainObject) => {
-            currentConfigObjects.push(currentConfigMainObject);
-            Object.keys(configValue[currentConfigMainObject]).forEach((currentConfigSecondaryObject) => {
-                currentConfigObjects.push(currentConfigSecondaryObject);
+            Object.keys(configValue).forEach((currentConfigMainObject) => {
+                Object.keys(configValue[currentConfigMainObject]).forEach((currentConfigSecondaryObject) => {
+                    currentConfigObjects.push(`${currentConfigMainObject}.${currentConfigSecondaryObject}`);
+                });
             });
-        });
-        defaultConfigObjects.forEach((defaultConfigObject) => {
-            if (currentConfigObjects.includes(defaultConfigObject) === false) {
-
-                isConfigFileValidFunctionResult = false;
-
+            defaultConfigObjects.forEach((defaultConfigObject) => {
+                if (currentConfigObjects.includes(defaultConfigObject) === false) {
+                    missingConfigurations.push(defaultConfigObject);
+                }
+            });
+            currentConfigObjects.forEach((currentConfigObject) => {
+                if (defaultConfigObjects.includes(currentConfigObject) === false) {
+                    extraConfigurations.push(currentConfigObject);
+                }
+            });
+            if (missingConfigurations.length > 0) {
+                console.log(`MCHSB » Missing config configuration(s): "${missingConfigurations.join('", "')}`);
             }
-        });
-        currentConfigObjects.forEach((currentConfigObject) => {
-            if (defaultConfigObjects.includes(currentConfigObject) === false) {
-
-                isConfigFileValidFunctionResult = false;
-
+            if (extraConfigurations.length > 0) {
+                console.log(`MCHSB » Extra config configuration(s): "${extraConfigurations.join('", "')}`);
+            } else {
+                return true;
             }
-        });
-    } catch (isConfigFileValidFunctionError) {
-
-        isConfigFileValidFunctionResult = false;
-
+        } catch { }
+    } catch {
+        console.log('MCHSB » Invalid config file!');
     }
-    return isConfigFileValidFunctionResult;
+    console.log('MCHSB » Error occured while validating config file and its configurations!');
+    return false;
 }
 
 function reformatConfigFile() {
     console.log('MCHSB » Reformatting config file...');
     try {
-        nodeFS.writeFileSync('config.json', JSON.stringify(defaultConfigFileLayout, null, 4), 'utf-8');
-        return true;
+        nodeFS.writeFileSync('config.json', JSON.stringify(defaultConfigFileLayout, null, 4));
+        console.log('MCHSB » Successfully reformatted config file. Please configure it first.');
     } catch {
-        return false;
+        console.log('MCHSB » Error occured while reformatting config file!');
     }
 }
 
-function loadEssentials() {
-    console.log('MCHSB » Loading important directories & files...');
-    if (doesImportantDIRsExists() === true) {
-        console.log('MCHSB » Successfully loaded important directories.');
-        if (doesImportantFilesExists() === true) {
-            console.log('MCHSB » Successfully loaded important files.');
-            if (doesEnvFileExists() === true) {
-                if (isEnvFileValid() === true) {
-                    console.log('MCHSB » Successfully validated .env file.');
-                    console.log('MCHSB » Successfully loaded .env file.');
-                    if (doesConfigFileExists() === true) {
-                        if (isConfigFileValid() === true) {
-                            console.log('MCHSB » Successfully validated config file.');
-                            console.log('MCHSB » Successfully loaded config file.');
-                            return true;
-                        } else {
-                            console.log('MCHSB » Invalid config file!');
-                            if (reformatConfigFile() === true) {
-                                console.log('MCHSB » Successfully reformatted config file. Please configure it before running staff bot again.');
-                            } else {
-                                console.log('MCHSB » Error occured while reformatting config file! Please reinstall staff bot.');
-                            }
-                        }
-                    } else {
-                        console.log('MCHSB » Missing config file!');
-                        if (generateConfigFile() === true) {
-                            console.log('MCHSB » Successfully generated a new config file! Please configure it before running staff bot again.');
-                        } else {
-                            console.log('MCHSB » Error occured while generating a new config file! Please reinstall staff bot.');
-                        }
-                    }
-                } else {
-                    console.log('MCHSB » Invalid .env file or its configuration!');
-                    if (reformatEnvFile() === true) {
-                        console.log('MCHSB » Successfully reformatted .env file. Please configure it before running staff bot again.');
-                    } else {
-                        console.log('MCHSB » Error occured while reformatting .env file! Please reinstall staff bot.');
-                    }
-                }
+function loadConfigFile() {
+    console.log('MCHSB » Loading config file...');
+    try {
+        if (doesConfigFileExists() === true) {
+            if (isConfigFileValid() === true) {
+                console.log('MCHSB » Successfully loaded config file.');
+                return true;
             } else {
-                console.log('MCHSB » Missing .env file!');
-                if (generateEnvFile() === true) {
-                    console.log('MCHSB » Successfully generated a new .env file! Please configure it before running staff bot again.');
-                } else {
-                    console.log('MCHSB » Error occured while generating a new .env file! Please reinstall staff bot.');
-                }
+                reformatConfigFile();
             }
         } else {
-            console.log('MCHSB » Error occured while loading important files! Please reinstall staff bot.');
+            generateConfigFile();
         }
-    } else {
-        console.log('MCHSB » Error occured while loading important directories! Please reinstall staff bot.');
-    }
+    } catch { }
+    console.log('MCHSB » Error occured while loading config file! Forcing staff bot to shutdown...');
     return false;
 }
 
@@ -452,9 +415,9 @@ function registerHandlers() {
 
         handlers = new Map();
 
-        const handlerFiles = nodeFS.readdirSync(importantDIR.handler, 'utf-8').filter(handlerFilesName => handlerFilesName.endsWith('.js'));
+        const handlerFilesName = nodeFS.readdirSync(importantDIR.handler).filter(handlerFileName => handlerFileName.endsWith('.js'));
 
-        handlerFiles.forEach((handlerFileName) => {
+        handlerFilesName.forEach((handlerFileName) => {
 
             const handlerFilePath = `${importantDIR.handler}${handlerFileName}`;
 
@@ -463,141 +426,166 @@ function registerHandlers() {
             handlers.set(handlerFile.data.name, handlerFile);
         });
 
-        errorHandler = handlers.get('error');
+        errorLogger = handlers.get('error_logger');
 
+        console.log('MCHSB » Successfully registered handlers.');
         return true;
     } catch {
+        console.log('MCHSB » Error occured while registering handlers! Forcing staff bot to restart...');
         return false;
     }
 }
 
-function executeErrorHandler(errorInfo, actionType) {
+function logError(errorMessage) {
 
-    let actionName;
+    const errorLogDateDetails = new Date();
 
-    switch (actionType) {
+    const errorLogFullFileName = `ERROR_LOG-${errorLogDateDetails.getDate()}_${errorLogDateDetails.getMonth() + 1}_${errorLogDateDetails.getFullYear()}-${errorLogDateDetails.getHours()}_${errorLogDateDetails.getMinutes()}_${errorLogDateDetails.getSeconds()}.txt`;
+
+    let errorLoggerHandlerResultDetails = { result: null, fileName: errorLogFullFileName };
+
+    try {
+
+        const errorLoggerHandler = handlers.get('error_logger');
+
+        errorLoggerHandler.execute(errorLoggerHandlerResultDetails, errorMessage);
+    } catch {
+
+        errorLoggerHandlerResultDetails.result = 'ERROR';
+
+    }
+    return errorLoggerHandlerResultDetails;
+}
+
+function handleError(errorMessage, errorAction) {
+
+    let errorActionName;
+
+    switch (errorAction) {
         default:
 
-            actionName = 'Forcing staff bot to restart...';
-
-            actionType = 0;
+            errorAction = 0;
 
             break;
         case 0:
-
-            actionName = 'Forcing staff bot to restart...';
-
             break;
         case 1:
-
-            actionName = 'Forcing staff bot to shutdown...';
-
             break;
     }
     try {
-        errorHandler.execute(errorInfo, discordBot, staffBot);
+        try {
+            staffBot.end();
+        } catch { }
+        try {
+            discordBot.destroy();
+        } catch { }
+
+        const errorLoggerDetails = logError(errorMessage);
+
+        switch (errorLoggerDetails.result) {
+            default:
+                console.log(`MCHSB » Error occured while generating an error log! File Name: ${errorLoggerDetails.fileName}`);
+                break;
+            case true:
+                console.log(`MCHSB » Successfully generated an error log! File Name: ${errorLoggerDetails.fileName}`);
+                break;
+            case false:
+                console.log(`MCHSB » Failed to generate an error log! File Name: ${errorLoggerDetails.fileName}`);
+                break;
+        }
     } catch {
-        console.log(`MCHSB » Error occured while executing error handler! ${actionName}`);
+        switch (errorAction) {
+            case 0:
+
+                errorActionName = 'Force restarting staff bot...';
+
+                break;
+            case 1:
+
+                errorActionName = 'Forcing staff bot to shutdown...';
+
+                break;
+        }
+        console.log(`MCHSB » Error occured while handling error! ${errorActionName}`);
     }
-    return process.exit(actionType);
+    return process.exit(errorAction);
 }
 
-function startConsoleChat() {
-    try {
+process.once('unhandledRejection', (processOnUnhandledRejectionMessage) => {
 
-        consoleChat = readline.createInterface({ input: process.stdin });
+    isDiscordBotReady = false, isStaffBotReady = false;
 
-        console.log('MCHSB » Successfully started console chat module.');
-    } catch (startConsoleChatError) {
-        console.log('MCHSB » Error occured while starting console chat! Restarting staff bot...');
-        executeErrorHandler(startConsoleChatError, 0);
-    }
-    return;
-}
+    console.log('MCHSB » Unhandled Process Rejection! Restarting staff bot...');
+    handleError(processOnUnhandledRejectionMessage, 0);
+});
+
+process.on('uncaughtException', (processOnUncaughtExceptionMessage) => {
+
+    isDiscordBotReady = false, isStaffBotReady = false;
+
+    console.log('MCHSB » Uncaught Process Exception! Restarting staff bot...');
+    handleError(processOnUncaughtExceptionMessage, 0);
+});
 
 try {
-    console.log('MCHSB » Starting up MCHub staff bot (Prisons)...');
-    if (loadEssentials() === true) {
-        console.log('MCHSB » Successfully loaded important directories & files.');
-        if (registerHandlers() === true) {
-            console.log('MCHSB » Successfully registered handlers.');
-            console.log('MCHSB » Starting console chat module...');
-            startConsoleChat();
-            console.log('MCHSB » Connecting to the Discord Bot...');
-            discordBot.login(process.env.DISCORD_BOT_TOKEN).then(() => {
-                console.log('MCHSB » Connected to the Discord Bot.');
-            }).catch((discordBotLoginError) => {
-                console.log('MCHSB » Error occured while connecting to the Discord Bot! Restarting staff bot...');
-                executeErrorHandler(discordBotLoginError, 0);
-            });
+    if (doesImportantDIRsExists() === true) {
+        if (doesImportantFilesExists() === true) {
+            if (loadEnvFile() === true) {
+                if (loadConfigFile() === true) {
+                    if (registerHandlers() === true) {
 
-            staffBot = mineflayer.createBot({ host: 'MCHub.COM', version: '1.18.2', username: process.env.STAFF_BOT_EMAIL, password: process.env.STAFF_BOT_PASSWORD, auth: 'microsoft', keepAlive: true, checkTimeoutInterval: 60000 });
+                        staffBot = mineflayer.createBot({ username: process.env.STAFF_BOT_EMAIL, password: process.env.STAFF_BOT_PASSWORD, auth: 'microsoft', version: '1.18.2', viewDistance: 2, keepAlive: true, checkTimeoutInterval: 30000, host: 'MCHub.COM' });
 
+                    } else {
+                        return process.exit(0);
+                    }
+                } else {
+                    return process.exit(1);
+                }
+            } else {
+                return process.exit(1);
+            }
         } else {
-            console.log('MCHSB » Error occured while registering handlers! Force restarting staff bot...');
-            return process.exit(0);
+            return process.exit(1);
         }
     } else {
-        console.log('MCHSB » Error occured while loading important directories & files! Force restarting staff bot...');
-        return process.exit(0);
+        return process.exit(1);
     }
 } catch {
     console.log('MCHSB » Error occured while starting up staff bot! Force restarting staff bot...');
     return process.exit(0);
 }
 
-process.on('unhandledRejection', (proccessOnUnhandledRejectionError) => {
-    console.log('MCHSB » Process Unhandled Rejection! Restarting staff bot...');
-    executeErrorHandler(proccessOnUnhandledRejectionError, 0);
-    return;
-});
+staffBot.on('error', (staffBotOnErrorMessage) => {
 
-process.on('uncaughtException', (proccessOnUncaughtExceptionError) => {
-    console.log('MCHSB » Process Uncaught Exception! Restarting staff bot...');
-    executeErrorHandler(proccessOnUncaughtExceptionError, 0);
-    return;
-});
+    isStaffBotReady = false;
 
-discordBot.on('error', (discordBotOnErrorError) => {
-    console.log('MCHSB » Discord Bot Error! Restarting staff bot...');
-    executeErrorHandler(discordBotOnErrorError, 0);
-    return;
-});
-
-discordBot.on('invalidated', (discordBotOnInvalidatedError) => {
-    console.log('MCHSB » Discord Bot Invalidated! Restarting staff bot...');
-    executeErrorHandler(discordBotOnInvalidatedError, 0);
-    return;
-});
-
-discordBot.on('shardDisconnect', (discordBotOnShardDisconnectError) => {
-    console.log('MCHSB » Discord Bot Shard Disconnect! Restarting staff bot...');
-    executeErrorHandler(discordBotOnShardDisconnectError, 0);
-    return;
-});
-
-discordBot.on('shardError', (discordBotOnShardErrorError) => {
-    console.log('MCHSB » Discord Bot Shard Error! Restarting staff bot...');
-    executeErrorHandler(discordBotOnShardErrorError, 0);
-    return;
-});
-
-staffBot.on('error', (staffBotOnErrorError) => {
     console.log('MCHSB » Staff Bot Error! Restarting staff bot...');
-    executeErrorHandler(staffBotOnErrorError, 0);
-    return;
+    handleError(staffBotOnErrorMessage, 0);
 });
 
-staffBot.on('kicked', (staffBotOnKickedError) => {
+staffBot.on('kicked', (staffBotOnKickedMessage) => {
+
+    isStaffBotReady = false;
+
     console.log('MCHSB » Staff Bot Kicked! Restarting staff bot...');
-    executeErrorHandler(staffBotOnKickedError, 0);
-    return;
+    handleError(staffBotOnKickedMessage, 0);
 });
 
-async function isConfigFileValuesValid() {
-    console.log('MCHSB » Validating config values...');
+staffBot.on('end', () => {
 
-    let isConfigFileValuesValidResult = true;
+    isStaffBotReady = false;
+
+});
+
+staffBot.once('login', async () => {
+    console.log('MCHSB » Connecting to MCHub.COM...');
+});
+
+async function verifyConfigValues() {
+    console.log('MCHSB » Verifying config values...');
+
+    let verifyConfigValuesResult = true
 
     try {
 
@@ -617,6 +605,8 @@ async function isConfigFileValuesValid() {
 
                 guildID = configValue.discord_bot.guild_id;
 
+                clientID = discordBot.user.id;
+
             }
         }
         if (typeof String(configValue.staff_bot.realm_name) !== 'string') {
@@ -629,7 +619,7 @@ async function isConfigFileValuesValid() {
                 return false;
             }
         }
-        if (typeof Number(configValue.staff_bot.survival_season) !== 'number') {
+        if (typeof Number(configValue.staff_bot.realm_season) !== 'number') {
             return false;
         }
         await discordBot.guilds.cache.get(configValue.discord_bot.guild_id).channels.fetch().then((discordBotGuildChannelsFetchResult) => {
@@ -643,26 +633,26 @@ async function isConfigFileValuesValid() {
             });
         });
         Object.keys(configValue).forEach((configValueMainObject) => {
-            if (isConfigFileValuesValidResult !== false) {
+            if (verifyConfigValuesResult === true) {
                 Object.keys(configValue[configValueMainObject]).forEach((configValueSecondaryObject) => {
                     switch (configValueMainObject) {
                         case 'feature':
-                            if (typeof Boolean(configValue.feature[configValueSecondaryObject]) !== 'boolean') {
+                            if (typeof Boolean(String(configValue.feature[configValueSecondaryObject]).toLowerCase()) !== 'boolean') {
 
-                                return isConfigFileValuesValidResult = false;
+                                return verifyConfigValuesResult = false;
 
                             }
                             break;
                         case 'discord_channel':
                             if (typeof Number(configValue.discord_channel[configValueSecondaryObject]) !== 'number') {
 
-                                return isConfigFileValuesValidResult = false;
+                                return verifyConfigValuesResult = false;
 
                             } else {
-                                if (configValue.feature[`log_${configValueSecondaryObject}_to_discord`] === 'true') {
+                                if (String(configValue.feature[`log_${configValueSecondaryObject}_to_discord`]).toLowerCase() === 'true') {
                                     if (discordBotGuildChannelsID.includes(configValue.discord_channel[configValueSecondaryObject]) !== true) {
 
-                                        return isConfigFileValuesValidResult = false;
+                                        return verifyConfigValuesResult = false;
 
                                     }
                                 }
@@ -671,12 +661,12 @@ async function isConfigFileValuesValid() {
                         case 'role_id':
                             if (typeof Number(configValue.role_id[configValueSecondaryObject]) !== 'number') {
 
-                                return isConfigFileValuesValidResult = false;
+                                return verifyConfigValuesResult = false;
 
                             } else {
                                 if (discordBotGuildRolesID.includes(configValue.role_id[configValueSecondaryObject]) !== true) {
 
-                                    return isConfigFileValuesValidResult = false;
+                                    return verifyConfigValuesResult = false;
 
                                 }
                             }
@@ -685,19 +675,19 @@ async function isConfigFileValuesValid() {
                 });
             }
         });
+    } catch (verifyConfigValuesError) {
 
-        clientID = discordBot.user.id;
-
-    } catch (isConfigFileValuesError) {
-
-        isConfigFileValuesValidResult = isConfigFileValuesError;
+        verifyConfigValuesResult = verifyConfigValuesError;
 
     }
-    return isConfigFileValuesValidResult;
+    return verifyConfigValuesResult;
 }
 
-async function syncDiscordSlashCommands() {
+async function synchronizeDiscordSlashCommands() {
     console.log('MCHSB » Synchronizing discord slash commands...');
+
+    let synchronizeDiscordSlashCommandsResult;
+
     try {
 
         const restAPI = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN);
@@ -715,351 +705,465 @@ async function syncDiscordSlashCommands() {
             discordSlashCommands.push(discordSlashCommand.data.toJSON());
             discordBot.slashCommands.set(discordSlashCommand.data.name, discordSlashCommand);
         });
-        await restAPI.put(Routes.applicationGuildCommands(clientID, guildID), { body: discordSlashCommands });
-        return true;
-    } catch (syncDiscordSlashCommandsError) {
-        return syncDiscordSlashCommandsError;
+        await restAPI.put(Routes.applicationGuildCommands(clientID, guildID), { body: discordSlashCommands }).then(() => {
+
+            synchronizeDiscordSlashCommandsResult = true;
+
+        }).catch((synchronizeDiscordSlashCommandsErro) => {
+
+            synchronizeDiscordSlashCommandsResult = synchronizeDiscordSlashCommandsErro;
+
+        });
+    } catch (synchronizeDiscordSlashCommandsError) {
+
+        synchronizeDiscordSlashCommandsResult = synchronizeDiscordSlashCommandsError;
+
     }
+    return synchronizeDiscordSlashCommandsResult;
 }
 
-async function logDiscordInteraction(discordInteractionDetails, discordInteractionResult) {
+staffBot.once('spawn', async () => {
+
+    isStaffBotReady = true;
+
+    console.log('MCHSB » Connected to MCHub.COM.');
+    console.log('MCHSB » Connecting to the Discord Bot...');
     try {
+        await discordBot.login(process.env.DISCORD_BOT_TOKEN).then(async () => {
+            console.log('MCHSB » Connected to the Discord Bot.');
+            await verifyConfigValues().then(async (verifyConfigValuesResult) => {
+                switch (verifyConfigValuesResult) {
+                    default:
+                        console.log('MCHSB » Error occured while verifying config values! Restarting staff bot...');
+                        handleError(verifyConfigValuesResult, 0);
+                        break;
+                    case true:
+                        console.log('MCHSB » Verified config values.');
+                        await synchronizeDiscordSlashCommands().then((synchronizeDiscordSlashCommandsResult) => {
+                            switch (synchronizeDiscordSlashCommandsResult) {
+                                default:
+                                    console.log('MCHSB » Error occured while synchronizing discord slash commands! Restarting staff bot...');
+                                    handleError(synchronizeDiscordSlashCommandsResult, 0);
+                                    break;
+                                case true:
+                                    console.log('MCHSB » Synchronized discord slash commands.');
 
-        const discordUserDisplayName = discordInteractionDetails.member.displayName;
+                                    const tasksSchedulerHandler = handlers.get('tasks_scheduler');
 
-        const discordUserID = discordInteractionDetails.member.id;
+                                    tasksSchedulerHandler.execute(configValue, discordBot, staffBot).then((tasksSchedulerHandlerResult) => {
+                                        if (tasksSchedulerHandlerResult === true) {
 
-        const discordInteractionChannelName = discordInteractionDetails.channel.name;
+                                            isDiscordBotReady = true;
 
-        const discordInteractionChannelID = discordInteractionDetails.channel.id;
+                                            console.log('MCHSB » Successfully scheduled tasks.');
+                                            console.log('MCHSB » Enabling console chat...');
 
-        const discordUserAvatarURL = discordInteractionDetails.member.displayAvatarURL();
+                                            consoleChat = readline.createInterface({ input: process.stdin });
 
-        let discordInteractionLogTemplate;
+                                            consoleChat.on('line', (consoleChatInput) => {
+                                                try {
 
-        switch (discordInteractionResult.interactionResult) {
-            default:
+                                                    const consoleChatHandler = handlers.get('console_chat');
 
-                discordInteractionLogTemplate = `User's Discord Username: ${discordUserDisplayName}\n` + `User's Discord ID: ${discordUserID}\n` + `Command: ${discordInteractionResult.interactionFullCommand}\n` + `Command Result: UNKNOWN\n` + 'Reason: Unknown error occured!\n' + `Channel's Name: #${discordInteractionChannelName}\n` + `Channel's ID: ${discordInteractionChannelID}`;
-
-                break;
-            case 'ERROR':
-
-                discordInteractionLogTemplate = `User's Discord Username: ${discordUserDisplayName}\n` + `User's Discord ID: ${discordUserID}\n` + `Command: ${discordInteractionResult.interactionFullCommand}\n` + `Command Result: ERROR\n` + 'Reason: Internal error occured!\n' + `Channel's Name: #${discordInteractionChannelName}\n` + `Channel's ID: ${discordInteractionChannelID}`;
-
-                break;
-            case false:
-
-                discordInteractionLogTemplate = `User's Discord Username: ${discordUserDisplayName}\n` + `User's Discord ID: ${discordUserID}\n` + `Command: ${discordInteractionResult.interactionFullCommand}\n` + `Command Result: FAILED\n` + `Reason: ${discordInteractionResult.interactionErrorReason}\n` + `Channel's Name: #${discordInteractionChannelName}\n` + `Channel's ID: ${discordInteractionChannelID}`;
-
-                break;
-            case true:
-
-                discordInteractionLogTemplate = `User's Discord Username: ${discordUserDisplayName}\n` + `User's Discord ID: ${discordUserID}\n` + `Command: ${discordInteractionResult.interactionFullCommand}\n` + `Command Result: SUCCESS\n` + `Channel's Name: #${discordInteractionChannelName}\n` + `Channel's ID: ${discordInteractionChannelID}`;
-
-                break;
-        }
-        if (configValue.feature.log_discord_interaction_to_console === 'true') {
-            console.log('\n================================\n' + discordInteractionLogTemplate + '\n================================\n');
-        }
-        if (configValue.feature.log_discord_interaction_to_discord === 'true') {
-
-            const discordInteractionLogsChannelID = configValue.discord_channel.discord_interaction_logs;
-
-            const discordInteractionLogsChannelName = discordBot.guilds.cache.get(guildID).channels.cache.get(discordInteractionLogsChannelID).name;
-
-            const discordMarkdowns = ['\*', '\_', '\`', '\>', '\|'];
-
-            discordMarkdowns.forEach(discordMarkdown => {
-
-                discordInteractionLogTemplate = discordInteractionLogTemplate.replace(new RegExp(`[\\${discordMarkdown}]`, 'g'), `\\${discordMarkdown}`);
-
-            });
-
-            const discordInteractionLogEmbed = new DiscordJS.EmbedBuilder()
-                .setColor('#4422bf')
-                .setTitle('DISCORD SLASH COMMAND USAGE')
-                .setDescription(discordInteractionLogTemplate)
-                .setThumbnail(discordUserAvatarURL)
-                .setTimestamp()
-                .setFooter({ text: 'Custom Coded By QimieGames', iconURL: 'https://i.imgur.com/qTwnd6e.png' });
-
-            if (discordBot.guilds.cache.get(guildID).channels.cache.get(discordInteractionLogsChannelID) !== undefined) {
-                if (discordBot.guilds.cache.get(guildID).channels.cache.get(discordInteractionLogsChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
-                    if (discordBot.guilds.cache.get(guildID).channels.cache.get(discordInteractionLogsChannelID).permissionsFor(clientID).has('SendMessages') === true) {
-                        await discordBot.guilds.cache.get(guildID).channels.cache.get(discordInteractionLogsChannelID).send({ embeds: [discordInteractionLogEmbed] });
-                    } else {
-                        console.log(`MCHSB » Error occured while logging discord interaction log in #${discordInteractionLogsChannelName}!`);
-                    }
-                } else {
-                    console.log(`MCHSB » Error occured while viewing #${discordInteractionLogsChannelName}!`);
+                                                    consoleChatHandler.execute(consoleChatInput, discordBot, staffBot);
+                                                } catch (consoleChatOnLineError) {
+                                                    console.log('MCHSB » Error occured while executing console chat on line tasks! Restarting staff bot...');
+                                                    handleError(consoleChatOnLineError, 0);
+                                                }
+                                                return;
+                                            });
+                                            console.log('MCHSB » Console chat enabled.');
+                                        } else {
+                                            console.log('MCHSB » Error occured while scheduling tasks! Restarting staff bot...');
+                                            handleError(tasksSchedulerHandlerResult, 0);
+                                        }
+                                    }).catch((tasksSchedulerHandlerError) => {
+                                        console.log('MCHSB » Error occured while scheduling tasks! Restarting staff bot...');
+                                        handleError(tasksSchedulerHandlerError, 0);
+                                    });
+                                    break;
+                                case false:
+                                    console.log('MCHSB » Failed to synchronize discord slash commands! Restarting staff bot...');
+                                    handleError(synchronizeDiscordSlashCommandsResult, 0);
+                                    break;
+                            }
+                        });
+                        break;
+                    case false:
+                        console.log('MCHSB » Invalid config value(s)! Please configure it correctly first. Shutting down staff bot...');
+                        handleError('Invalid config configuration(s)', 1);
+                        break;
                 }
-            } else {
-                console.log(`MCHSB » Error occured while finding discord interaction logs channel!`);
-            }
-        }
-    } catch (logDiscordInteractionError) {
-        console.log('MCHSB » Error occured while logging discord interaction! Restarting staff bot...');
-        executeErrorHandler(logDiscordInteractionError, 0);
-    }
-    return;
-}
-
-consoleChat.on('line', async (consoleChatInput) => {
-    try {
-
-        const consoleChatHandler = handlers.get('console_chat');
-
-        await consoleChatHandler.execute(consoleChatInput, discordBot, staffBot);
-    } catch (consoleChatOnLineError) {
-        console.log('MCHSB » Error occured while executing console chat on line tasks! Restarting staff bot...');
-        executeErrorHandler(consoleChatOnLineError, 0);
+            });
+        }).catch((discordBotLoginError) => {
+            console.log('MCHSB » Error occured while connecting to the Discord Bot! Restarting staff bot...');
+            handleError(discordBotLoginError, 0);
+        });
+    } catch (staffBotOnceSpawnError) {
+        console.log('MCHSB » Error occured while executing staff bot once spawn tasks! Restarting staff bot...');
+        handleError(staffBotOnceSpawnError, 0);
     }
     return;
 });
 
-discordBot.once('ready', async () => {
-    try {
-        await isConfigFileValuesValid().then(async (isConfigFileValuesValidResult) => {
-            switch (isConfigFileValuesValidResult) {
-                default:
-                    console.log('MCHSB » Error occured while validating config values! Restarting staff bot...');
-                    executeErrorHandler(isConfigFileValuesValidResult, 0);
-                    break;
-                case true:
-                    console.log('MCHSB » Validated config values.');
-                    await syncDiscordSlashCommands().then((syncDiscordSlashCommandsResult) => {
-                        if (syncDiscordSlashCommandsResult === true) {
-                            console.log('MCHSB » Successfully synchronized discord slash commands.');
-                        } else {
-                            console.log('MCHSB » Error occured while synchronizing discord slash commands! Restarting staff bot...');
-                            executeErrorHandler(syncDiscordSlashCommandsResult, 0);
-                        }
-                    });
-                    break;
-                case false:
-                    console.log('MCHSB » Invalid config file configurations! Please set it up correctly before running staff bot again. Shutting down staff bot...');
-                    process.exit(1);
-                    break;
-            }
-        });
-    } catch (discordBotOnceReadyError) {
-        console.log('MCHSB » Error occured while executing discord bot once ready tasks! Restarting staff bot...');
-        executeErrorHandler(discordBotOnceReadyError, 0);
-    }
-    return;
+discordBot.on('error', (discordBotOnErrorMessage) => {
+
+    isDiscordBotReady = false;
+
+    console.log('MCHSB » Discord Bot Error! Restarting staff bot...');
+    handleError(discordBotOnErrorMessage, 0);
+});
+
+discordBot.on('invalidated', (discordBotOnInvalidatedMessage) => {
+
+    isDiscordBotReady = false;
+
+    console.log('MCHSB » Discord Bot Invalidated! Restarting staff bot...');
+    handleError(discordBotOnInvalidatedMessage, 0);
+})
+
+discordBot.on('shardError', (discordBotOnShardErrorMessage) => {
+
+    isDiscordBotReady = false;
+
+    console.log('MCHSB » Discord Bot Shard Error! Restarting staff bot...');
+    handleError(discordBotOnShardErrorMessage, 0);
 });
 
 discordBot.on('ready', async () => {
     try {
-        discordBot.user.setActivity('MCHub.COM - Atlantic Prisons', { type: DiscordJS.ActivityType.Playing, name: 'MCHub.COM - Atlantic Prisons' });
+
+        const realmName = String(configValue.staff_bot.realm_name).toLowerCase();
+
+        let discordBotActivityStatusMessage;
+
+        switch (realmName) {
+            default:
+
+                discordBotActivityStatusMessage = 'MCHub.COM - Idle';
+
+                break;
+            case 'hubm':
+
+                discordBotActivityStatusMessage = 'MCHub.COM - Hub';
+
+                break;
+            case 'atlantic':
+
+                discordBotActivityStatusMessage = 'MCHub.COM - Atlantic Prisons';
+
+                break;
+            case 'sun':
+
+                discordBotActivityStatusMessage = 'MCHub.COM - Sun Skyblock';
+
+                break;
+            case 'survival':
+
+                discordBotActivityStatusMessage = 'MCHub.COM - Survival';
+
+                break;
+            case 'pixelmon':
+
+                discordBotActivityStatusMessage = 'MCHub.COM - Pixelmon';
+
+                break;
+        }
+        discordBot.user.setActivity(discordBotActivityStatusMessage, { type: ActivityType.Playing, name: discordBotActivityStatusMessage });
     } catch (discordBotOnReadyError) {
         console.log('MCHSB » Error occured while executing discord bot on ready tasks! Restarting staff bot...');
-        executeErrorHandler(discordBotOnReadyError, 0);
+        handleError(discordBotOnReadyError, 0);
     }
     return;
 });
 
-discordBot.on('interactionCreate', async (discordInteractionDetails) => { //REWRITE LATER
+async function logDiscordSlashCommandUsage(discordSlashCommandDetails, discordSlashCommandHandlerResultDetails) {
+    try {
 
-    let discordInteractionHandlerResult = { interactionResult: null, interactionFullCommand: null, interactionErrorReason: null };
+        const discordUserDisplayName = discordSlashCommandDetails.member.displayName;
+
+        const discordUserID = discordSlashCommandDetails.member.id;
+
+        const discordSlashCommandChannelName = discordSlashCommandDetails.channel.name;
+
+        const discordSlashCommandChannelID = discordSlashCommandDetails.channel.id;
+
+        let discordSlashCommandUsageLogTemplate;
+
+        switch (discordSlashCommandHandlerResultDetails.result) {
+            default:
+
+                discordSlashCommandUsageLogTemplate = `User's Discord Display Name: ${discordUserDisplayName}\n` + `User's Discord ID: ${discordUserID}\n` + `Full Command: ${discordSlashCommandHandlerResultDetails.fullCommand}\n` + `Command Result: UNKNOWN\n` + 'Reason: Unknown error occured!\n' + `Channel's Name: #${discordSlashCommandChannelName}\n` + `Channel's ID: ${discordSlashCommandChannelID}`;
+
+                break;
+            case 'ERROR':
+
+                discordSlashCommandUsageLogTemplate = `User's Discord Display Name: ${discordUserDisplayName}\n` + `User's Discord ID: ${discordUserID}\n` + `Full Command: ${discordSlashCommandHandlerResultDetails.fullCommand}\n` + `Command Result: ERROR\n` + 'Reason: Internal error occured!\n' + `Channel's Name: #${discordSlashCommandChannelName}\n` + `Channel's ID: ${discordSlashCommandChannelID}`;
+
+                break;
+            case false:
+
+                discordSlashCommandUsageLogTemplate = `User's Discord Display Name: ${discordUserDisplayName}\n` + `User's Discord ID: ${discordUserID}\n` + `Full Command: ${discordSlashCommandHandlerResultDetails.fullCommand}\n` + `Command Result: FAILED\n` + `Reason: ${discordSlashCommandHandlerResultDetails.failedReason}\n` + `Channel's Name: #${discordSlashCommandChannelName}\n` + `Channel's ID: ${discordSlashCommandChannelID}`;
+
+                break;
+            case true:
+
+                discordSlashCommandUsageLogTemplate = `User's Discord Display Name: ${discordUserDisplayName}\n` + `User's Discord ID: ${discordUserID}\n` + `Full Command: ${discordSlashCommandHandlerResultDetails.fullCommand}\n` + `Command Result: SUCCESS\n` + `Channel's Name: #${discordSlashCommandChannelName}\n` + `Channel's ID: ${discordSlashCommandChannelID}`;
+
+                break;
+        }
+        if (Boolean(String(configValue.feature.log_discord_slash_command_usage_to_console).toLowerCase()) === true) {
+            console.log('================================\n' + discordSlashCommandUsageLogTemplate + '\n================================');
+        }
+        if (Boolean(String(configValue.feature.log_discord_slash_command_usage_to_discord).toLowerCase()) === true) {
+
+            const discordSlashCommandUsageLogChannelID = configValue.discord_channel.discord_slash_command_usage;
+
+            const discordSlashCommandUsageLogChannelName = discordBot.guilds.cache.get(guildID).channels.cache.get(discordSlashCommandUsageLogChannelID).name;
+
+            const discordSlashCommandUsageLogEmbedThumbnail = discordSlashCommandDetails.member.displayAvatarURL();
+
+            const discordMarkdowns = ['*', '_', '~', '`', '>', '|'];
+
+            discordMarkdowns.forEach((discordMarkdown) => {
+
+                discordSlashCommandUsageLogTemplate = discordSlashCommandUsageLogTemplate.replace(RegExp(`[\\${discordMarkdown}]`, 'g'), `\\${discordMarkdown}`);
+
+            });
+
+            const discordSlashCommandUsageLogEmbedDescription = discordSlashCommandUsageLogTemplate;
+
+            const discordSlashCommandUsageLogEmbed = new EmbedBuilder()
+                .setTitle('DISCORD SLASH COMMAND USAGE')
+                .setColor(discordEmbedDetails.color)
+                .setThumbnail(discordSlashCommandUsageLogEmbedThumbnail)
+                .setDescription(discordSlashCommandUsageLogEmbedDescription)
+                .setFooter(discordEmbedDetails.footer)
+                .setTimestamp();
+
+            if (discordBot.guilds.cache.get(guildID).channels.cache.get(discordSlashCommandUsageLogChannelID) !== undefined) {
+                if (discordBot.guilds.cache.get(guildID).channels.cache.get(discordSlashCommandUsageLogChannelID).permissionsFor(clientID).has('ViewChannel') === true) {
+                    if (discordBot.guilds.cache.get(guildID).channels.cache.get(discordSlashCommandUsageLogChannelID).permissionsFor(clientID).has('SendMessages') === true) {
+                        await discordBot.guilds.cache.get(guildID).channels.cache.get(discordSlashCommandUsageLogChannelID).send({ embeds: [discordSlashCommandUsageLogEmbed] });
+                    } else {
+                        console.log(`MCHSB » Error occured while logging discord slash command usage log in #${discordSlashCommandUsageLogChannelName}!`);
+                    }
+                } else {
+                    console.log(`MCHSB » Error occured while viewing #${discordSlashCommandUsageLogChannelName}!`);
+                }
+            } else {
+                console.log('MCHSB » Error occured while finding discord slash command usage log channel!');
+            }
+        }
+    } catch (logDiscordSlashCommandUsageError) {
+        console.log('MCHSB » Error occured while executing logDiscordSlashCommandUsage execute tasks! Restarting staff bot...');
+        handleError(logDiscordSlashCommandUsageError, 0);
+    }
+    return;
+}
+
+function isMinecraftUsernameValid(minecraftUsername) {
+    try {
+
+        let minecraftUsernameRegex;
+
+        switch (String(minecraftUsername).startsWith('*')) {
+            default:
+                console.log('MCHSB » Error occured while determining is a java or bedrock player! Restarting staff bot...');
+                return 'ERROR';
+                break;
+            case false:
+
+                minecraftUsernameRegex = RegExp(/^[0-9A-Za-z\_]{3,16}$/);
+
+                break;
+            case true:
+
+                minecraftUsernameRegex = RegExp(/^\*[0-9A-Za-z\_]{3,16}$/);
+
+                break;
+        }
+        switch (minecraftUsernameRegex.test(minecraftUsername)) {
+            default:
+                console.log('MCHSB » Error occured while validating minecraft username! Restarting staff bot...');
+                return 'ERROR';
+                break;
+            case false:
+                return false;
+                break;
+            case true:
+                return true;
+                break;
+        }
+    } catch {
+        return 'ERROR';
+    }
+}
+
+discordBot.on('interactionCreate', async (discordInteractionDetails) => {
+
+    let discordSlashCommandResultDetails = { result: null, fullCommand: null, failedReason: null };
 
     try {
         if (discordInteractionDetails.isChatInputCommand()) {
             await discordInteractionDetails.deferReply({ ephemeral: false }).then(async () => {
+                if (isStaffBotReady === true) {
+                    if (isDiscordBotReady === true) {
 
-                const staffBotBlacklistedUserRoleID = configValue.role_id.bot_blacklisted;
+                        const staffBotBlacklistedUserRoleID = [configValue.role_id.bot_blacklisted];
 
-                if (discordInteractionDetails.member.roles.cache.some(discordUserRoles => discordUserRoles.id === staffBotBlacklistedUserRoleID) === true) {
-                    await discordInteractionDetails.editReply({ content: '```You are blacklisted from using this bot!```', ephemeral: false }).then(() => {
+                        if (discordInteractionDetails.member.roles.cache.some(discordUserRoles => staffBotBlacklistedUserRoleID.includes(discordUserRoles.id)) !== true) {
+                            if (isDiscordSlashCommandsOnCooldown === false) {
 
-                        discordInteractionHandlerResult.interactionResult = false, discordInteractionHandlerResult.interactionFullCommand = `/${discordInteractionDetails.commandName}`, discordInteractionHandlerResult.interactionErrorReason = 'User is blacklisted from using this bot!';
+                                isDiscordSlashCommandsOnCooldown = true;
 
-                    }).then(async () => {
-                        await logDiscordInteraction(discordInteractionDetails, discordInteractionHandlerResult);
-                    });
-                } else {
-                    if (isDiscordSlashCommandsOnCooldown === false) {
+                                const discordSlashCommandHandler = discordBot.slashCommands.get(discordInteractionDetails.commandName);
 
-                        const discordInteractionHandler = discordBot.slashCommands.get(discordInteractionDetails.commandName);
+                                switch (discordInteractionDetails.commandName) {
+                                    default:
+                                        await discordInteractionDetails.editReply({ content: '```This command has not been implemented yet!```', ephemeral: false }).then(() => {
 
-                        isDiscordSlashCommandsOnCooldown = true;
+                                            discordSlashCommandResultDetails.result = false, discordSlashCommandResultDetails.fullCommand = `/${discordInteractionDetails.commandName}`, discordSlashCommandResultDetails.failedReason = 'This command has not been implemented yet!';
 
-                        switch (discordInteractionDetails.commandName) {
-                            default:
-                                await discordInteractionDetails.editReply({ content: '```Internal error occured!```', ephemeral: false }).then(() => {
+                                        }).then(async () => {
+                                            logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandResultDetails);
+                                        });
+                                        break;
+                                    case 'blacklist':
+                                        await discordSlashCommandHandler.execute(discordSlashCommandResultDetails, discordInteractionDetails, configValue, guildID, clientID, discordBot).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                    case 'chat':
+                                        await discordSlashCommandHandler.execute(discordSlashCommandResultDetails, discordInteractionDetails, configValue, staffBot).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                    case 'dupeip':
+                                        await discordSlashCommandHandler.execute(discordEmbedDetails, discordSlashCommandResultDetails, discordInteractionDetails, configValue, staffBot, isMinecraftUsernameValid).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                    case 'export':
+                                        await discordSlashCommandHandler.execute(discordSlashCommandResultDetails, discordInteractionDetails, configValue, staffBot, isMinecraftUsernameValid).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                    case 'help':
+                                        await discordSlashCommandHandler.execute(importantDIR.discord_slash_command, discordEmbedDetails, discordSlashCommandResultDetails, discordInteractionDetails).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                    case 'hist':
+                                        await discordSlashCommandHandler.execute(discordSlashCommandResultDetails, discordInteractionDetails, configValue, staffBot, isMinecraftUsernameValid).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                    case 'ping':
+                                        await discordSlashCommandHandler.execute(discordEmbedDetails, discordSlashCommandResultDetails, discordInteractionDetails, staffBot, isMinecraftUsernameValid).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                    case 'prunehist':
+                                        await discordSlashCommandHandler.execute(discordSlashCommandResultDetails, discordInteractionDetails, configValue, staffBot, isMinecraftUsernameValid).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                    case 'restart':
+                                        await discordSlashCommandHandler.execute(discordSlashCommandResultDetails, discordInteractionDetails, configValue, discordBot, staffBot, logDiscordSlashCommandUsage);
+                                        break;
+                                    case 'seen':
+                                        await discordSlashCommandHandler.execute(discordEmbedDetails, discordSlashCommandResultDetails, discordInteractionDetails, staffBot, isMinecraftUsernameValid).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                    case 'staffmode':
+                                        await discordSlashCommandHandler.execute(discordEmbedDetails, discordSlashCommandResultDetails, discordInteractionDetails, configValue, staffBot).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                    case 'staffstats':
+                                        await discordSlashCommandHandler.execute(discordEmbedDetails, discordSlashCommandResultDetails, discordInteractionDetails, configValue, staffBot, isMinecraftUsernameValid).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                    case 'sudo':
+                                        await discordSlashCommandHandler.execute(discordSlashCommandResultDetails, discordInteractionDetails, configValue, staffBot).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                    case 'unblacklist':
+                                        await discordSlashCommandHandler.execute(discordSlashCommandResultDetails, discordInteractionDetails, configValue, guildID, clientID, discordBot).then(async (discordSlashCommandHandlerResultDetails) => {
+                                            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandHandlerResultDetails);
+                                        });
+                                        break;
+                                }
 
-                                    discordInteractionHandlerResult.interactionResult = 'ERROR', discordInteractionHandlerResult.interactionFullCommand = `/${discordInteractionDetails.commandName}`;
+                                isDiscordSlashCommandsOnCooldown = false;
+
+                            } else {
+                                await discordInteractionDetails.editReply({ content: '```Discord slash commands is on cooldown!```', ephemeral: false }).then(() => {
+
+                                    discordSlashCommandResultDetails.result = false, discordSlashCommandResultDetails.fullCommand = `/${discordInteractionDetails.commandName}`, discordSlashCommandResultDetails.failedReason = 'Discord slash commands is on cooldown!';
 
                                 }).then(async () => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionHandlerResult);
+                                    await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandResultDetails);
                                 });
-                                break;
-                            case 'ban':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'blacklist':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'chat':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'dupeip':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'export':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'help':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'hist':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'kick':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'mute':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'prunehist':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'restart':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, discordBot, staffBot, logDiscordInteraction);
-                                break;
-                            case 'seen':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'staffmode':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'staffstats':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'sudo':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'unban':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'unblacklist':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'unmute':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'unwarn':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
-                            case 'warn':
-                                await discordInteractionHandler.execute(discordInteractionHandlerResult, discordInteractionDetails, configValue, staffBot).then(async (discordInteractionResult) => {
-                                    await logDiscordInteraction(discordInteractionDetails, discordInteractionResult);
-                                });
-                                break;
+                            }
+                        } else {
+                            await discordInteractionDetails.editReply({ content: '```You are blacklisted from using this staff bot!```', ephemeral: false }).then(() => {
+
+                                discordSlashCommandResultDetails.result = false, discordSlashCommandResultDetails.fullCommand = `/${discordInteractionDetails.commandName}`, discordSlashCommandResultDetails.failedReason = 'User is blacklisted from using this staff bot!';
+
+                            }).then(async () => {
+                                await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandResultDetails);
+                            });
                         }
-
-                        isDiscordSlashCommandsOnCooldown = false;
-
                     } else {
-                        await discordInteractionDetails.editReply({ content: '```Discord slash commands is on cooldown!```', ephemeral: false }).then(() => {
+                        await discordInteractionDetails.editReply({ content: '```Discord bot is currently not ready!```', ephemeral: false }).then(() => {
 
-                            discordInteractionHandlerResult.interactionResult = false, discordInteractionHandlerResult.interactionFullCommand = `/${discordInteractionDetails.commandName}`, discordInteractionHandlerResult.interactionErrorReason = 'Discord slash commands is on cooldown!';
+                            discordSlashCommandResultDetails.result = false, discordSlashCommandResultDetails.fullCommand = `/${discordInteractionDetails.commandName}`, discordSlashCommandResultDetails.failedReason = 'Discord bot is currently not ready!';
 
                         }).then(async () => {
-                            await logDiscordInteraction(discordInteractionDetails, discordInteractionHandlerResult);
+                            logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandResultDetails);
                         });
                     }
+                } else {
+                    await discordInteractionDetails.editReply({ content: '```Staff bot is currently not ready!```', ephemeral: false }).then(() => {
+
+                        discordSlashCommandResultDetails.result = false, discordSlashCommandResultDetails.fullCommand = `/${discordInteractionDetails.commandName}`, discordSlashCommandResultDetails.failedReason = 'Staff bot is currently not ready!';
+
+                    }).then(async () => {
+                        logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandResultDetails);
+                    });
                 }
             });
         }
     } catch (discordBotOnInteractionCreateError) {
         console.log('MCHSB » Error occured while executing discord bot on interaction create tasks! Restarting staff bot...');
-        await discordInteractionDetails.editReply({ content: '```Error occured while executing this discord slash command handler!```', ephemeral: false }).then(() => {
+        await discordInteractionDetails.editReply({ content: '```Error occured while executing discord bot on interaction create tasks!```', ephemeral: false }).then(() => {
 
-            discordInteractionHandlerResult.interactionResult = 'ERROR', discordInteractionHandlerResult.interactionFullCommand = `/${discordInteractionDetails.commandName}`;
+            discordSlashCommandResultDetails.result = 'ERROR', discordSlashCommandResultDetails.fullCommand = `/${discordInteractionDetails.commandName}`;
 
         }).then(async () => {
-            await logDiscordInteraction(discordInteractionDetails, discordInteractionHandlerResult);
+            await logDiscordSlashCommandUsage(discordInteractionDetails, discordSlashCommandResultDetails);
         }).catch(() => { });
-        executeErrorHandler(discordBotOnInteractionCreateError, 0);
+        handleError(discordBotOnInteractionCreateError, 0);
     }
     return;
 });
 
-staffBot.once('login', async () => {
-    console.log('MCHSB » Connecting to MCHub.COM...');
-    return;
-});
-
-staffBot.once('spawn', async () => {
-    console.log('MCHSB » Connected to MCHub.COM.');
+staffBot.on('message', async (staffBotChatMessage, staffBotChatMessagePosition) => {
     try {
+        if (isDiscordBotReady === true && staffBotChatMessagePosition !== 'game_info') {
 
-        const tasksSchedulerHandler = handlers.get('tasks_scheduler');
+            const staffBotChatHandler = handlers.get('staff_bot_chat');
 
-        await tasksSchedulerHandler.execute(configValue, discordBot, staffBot).then((tasksSchedulerHandlerResult) => {
-            if (tasksSchedulerHandlerResult === true) {
-                console.log('MCHSB » Successfully scheduled tasks.');
-            } else {
-                console.log('MCHSB » Error occured while scheduling tasks! Restarting staff bot...');
-                executeErrorHandler(tasksSchedulerHandlerResult, 0);
-            }
-        });
-    } catch (staffBotOnceSpawnError) {
-        console.log('MCHSB » Error occured while executing staff bot once spawn tasks! Restarting staff bot...');
-        executeErrorHandler(staffBotOnceSpawnError, 0);
-    }
-    return;
-});
-
-staffBot.on('message', async (chatMessage, chatPosition) => {
-    try {
-        if (chatPosition !== 'game_info' && String(chatMessage).length >= 8) {
-
-            const chatHandler = handlers.get('staff_bot_chat');
-
-            await chatHandler.execute(configValue, guildID, clientID, discordBot, chatMessage);
+            await staffBotChatHandler.execute(discordEmbedDetails, configValue, guildID, clientID, discordBot, staffBotChatMessage);
         }
     } catch (staffBotOnMessageError) {
         console.log('MCHSB » Error occured while executing staff bot on message tasks! Restarting staff bot...');
-        executeErrorHandler(staffBotOnMessageError, 0);
+        handleError(staffBotOnMessageError, 0);
     }
     return;
 });
@@ -1071,7 +1175,7 @@ staffBot.on('resourcePack', async (resourcePackURL, resourcePackHash) => {
         console.log('MCHSB » Rejected incoming resource pack.');
     } catch (staffBotOnResourcePackError) {
         console.log('MCHSB » Error occured while executing staff bot on resource pack tasks! Restarting staff bot...');
-        executeErrorHandler(staffBotOnResourcePackError, 0);
+        handleError(staffBotOnResourcePackError, 0);
     }
     return;
 });
