@@ -44,19 +44,7 @@ module.exports = {
                         break;
                     case true:
 
-                        const regexExcludedCharacters = ['*', '_'];
-
-                        let staffMemberIGNForRegex = staffMemberIGN;
-
-                        regexExcludedCharacters.forEach((regexExcludedCharacter) => {
-
-                            staffMemberIGNForRegex = staffMemberIGNForRegex.replace(RegExp(`[\\${regexExcludedCharacter}]`, 'g'), `\\\\${regexExcludedCharacter}`);
-
-                        });
-
-                        const staffstatsMessageStringRegex = `^MCHUB \\» Statistics for ${staffMemberIGNForRegex}`;
-
-                        const staffstatsMessageRegex = RegExp(staffstatsMessageStringRegex, 'i');
+                        const staffstatsMessageRegex = RegExp(/^MCHUB \\» Statistics for ([0-9A-Za-z\_\*]{3,17})/, 'i');
 
                         const staffstatsStaffMemberIGN = staffBot.findMessage(8000, staffstatsMessageRegex).then(async (staffstatsStaffMemberIGNResult) => {
                             if (staffstatsStaffMemberIGNResult === false) {
@@ -67,7 +55,7 @@ module.exports = {
                                 });
                             } else {
 
-                                const staffstatsStaffMemberIGNActualIGNDetails = String(staffstatsStaffMemberIGNResult).match(RegExp(/^MCHUB \» Statistics for ([0-9A-Za-z\_\*]{3,17})/));
+                                const staffstatsStaffMemberIGNActualIGNDetails = String(staffstatsStaffMemberIGNResult).match(staffstatsMessageRegex);
 
                                 const staffMemberIGNActualIGN = staffstatsStaffMemberIGNActualIGNDetails[1];
 

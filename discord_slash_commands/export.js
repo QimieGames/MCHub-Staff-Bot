@@ -120,7 +120,7 @@ module.exports = {
                                             break;
                                     }
                                 }
-                            });
+                            });f
                             switch (typeof invalidStaffMemberIGNsResult) {
                                 default:
                                     await discordSlashCommandDetails.editReply({ content: '```Internal error occured!```', ephemeral: false }).then(() => {
@@ -170,19 +170,7 @@ module.exports = {
                                                     KICKS: null
                                                 };
 
-                                                const staffIGNExcludedRegexCharacters = ['*', '_'];
-
-                                                let staffIGNForRegex = staffIGN;
-
-                                                staffIGNExcludedRegexCharacters.forEach((staffIGNExcludedRegexCharacter) => {
-
-                                                    staffIGNForRegex = staffIGNForRegex.replace(RegExp(`[\\${staffIGNExcludedRegexCharacter}]`, 'g'), `\\\\${staffIGNExcludedRegexCharacter}`);
-
-                                                });
-
-                                                const startOfStaffstatsMessageString = `^MCHUB \\» Statistics for ${staffIGNForRegex}`;
-
-                                                const startOfStaffstatsMessageRegex = RegExp(startOfStaffstatsMessageString, 'i');
+                                                const startOfStaffstatsMessageRegex = RegExp(/^MCHUB \» Statistics for ([0-9A-Za-z\_\*]{3,17})/);
 
                                                 const getStaffstats = staffBot.findMessage(8000, startOfStaffstatsMessageRegex).then(async (getStaffstatsResult) => {
                                                     if (getStaffstatsResult === false) {
@@ -193,7 +181,7 @@ module.exports = {
                                                         });
                                                     } else {
 
-                                                        const staffActualIGNDetails = String(getStaffstatsResult).match(RegExp(/^MCHUB \» Statistics for ([0-9A-Za-z\_\*]{3,17})/));
+                                                        const staffActualIGNDetails = String(getStaffstatsResult).match(startOfStaffstatsMessageRegex);
 
                                                         const staffActualIGN = staffActualIGNDetails[1];
 
